@@ -49,6 +49,13 @@ namespace BushWinApplication {
 	private: System::Windows::Forms::CheckBox^  checkBox2;
 	private: System::Windows::Forms::ComboBox^  comboBox1;
 	private: System::Windows::Forms::NotifyIcon^  notifyIcon1;
+	private: System::Windows::Forms::ContextMenuStrip^  contextMenuStrip1;
+	private: System::Windows::Forms::ToolStripMenuItem^  toolStripMenuItem3;
+	private: System::Windows::Forms::ToolStripMenuItem^  toolStripMenuItem2;
+	private: System::Windows::Forms::ToolStripMenuItem^  toolStripMenuItem1;
+
+
+
 
 	private: System::ComponentModel::IContainer^  components;
 
@@ -72,6 +79,11 @@ namespace BushWinApplication {
 			this->checkBox2 = ( gcnew System::Windows::Forms::CheckBox() );
 			this->comboBox1 = ( gcnew System::Windows::Forms::ComboBox() );
 			this->notifyIcon1 = ( gcnew System::Windows::Forms::NotifyIcon( this->components ) );
+			this->contextMenuStrip1 = ( gcnew System::Windows::Forms::ContextMenuStrip( this->components ) );
+			this->toolStripMenuItem3 = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
+			this->toolStripMenuItem2 = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
+			this->toolStripMenuItem1 = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
+			this->contextMenuStrip1->SuspendLayout();
 			this->SuspendLayout();
 			// 
 			// label1
@@ -117,9 +129,40 @@ namespace BushWinApplication {
 			// 
 			// notifyIcon1
 			// 
+			this->notifyIcon1->ContextMenuStrip = this->contextMenuStrip1;
 			this->notifyIcon1->Text = L"notifyIcon1";
 			this->notifyIcon1->Visible = true;
 			this->notifyIcon1->MouseDoubleClick += gcnew System::Windows::Forms::MouseEventHandler( this, &MyForm::notifyIcon1_MouseDoubleClick );
+			// 
+			// contextMenuStrip1
+			// 
+			this->contextMenuStrip1->Items->AddRange( gcnew cli::array< System::Windows::Forms::ToolStripItem^  >( 3 ) {
+				this->toolStripMenuItem3,
+					this->toolStripMenuItem2, this->toolStripMenuItem1
+			} );
+			this->contextMenuStrip1->Name = L"contextMenuStrip1";
+			this->contextMenuStrip1->Size = System::Drawing::Size( 134, 70 );
+			this->contextMenuStrip1->Text = L"notyfyIcon1Menu";
+			// 
+			// toolStripMenuItem3
+			// 
+			this->toolStripMenuItem3->Name = L"toolStripMenuItem3";
+			this->toolStripMenuItem3->Size = System::Drawing::Size( 133, 22 );
+			this->toolStripMenuItem3->Text = L"Дверь";
+			// 
+			// toolStripMenuItem2
+			// 
+			this->toolStripMenuItem2->Name = L"toolStripMenuItem2";
+			this->toolStripMenuItem2->Size = System::Drawing::Size( 133, 22 );
+			this->toolStripMenuItem2->Text = L"Настройка";
+			this->toolStripMenuItem2->Click += gcnew System::EventHandler( this, &MyForm::toolStripMenuItem2_Click );
+			// 
+			// toolStripMenuItem1
+			// 
+			this->toolStripMenuItem1->Name = L"toolStripMenuItem1";
+			this->toolStripMenuItem1->Size = System::Drawing::Size( 133, 22 );
+			this->toolStripMenuItem1->Text = L"Выход";
+			this->toolStripMenuItem1->Click += gcnew System::EventHandler( this, &MyForm::toolStripMenuItem1_Click );
 			// 
 			// MyForm
 			// 
@@ -135,26 +178,55 @@ namespace BushWinApplication {
 														static_cast< System::Byte >( 204 ) ) );
 			this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedSingle;
 			this->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
+			this->MaximizeBox = false;
+			this->MinimizeBox = false;
 			this->Name = L"MyForm";
 			this->RightToLeft = System::Windows::Forms::RightToLeft::No;
 			this->ShowInTaskbar = false;
 			this->Text = L"Настройка";
 			this->WindowState = System::Windows::Forms::FormWindowState::Minimized;
+			this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler( this, &MyForm::MyForm_FormClosing );
 			this->Load += gcnew System::EventHandler( this, &MyForm::MyForm_Load );
+			this->contextMenuStrip1->ResumeLayout( false );
 			this->ResumeLayout( false );
 			this->PerformLayout();
 
 		}
 #pragma endregion
-	private: System::Void MyForm_Load( System::Object^  sender, System::EventArgs^  e ) {
+	private: 
+	System::Void MyForm_Load( System::Object^  sender, System::EventArgs^  e ) {
 	}
 	;
-	private: System::Void notifyIcon1_MouseDoubleClick( System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e ) {
+	
+	System::Void notifyIcon1_MouseDoubleClick( System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e ) {
 		//TODO update form
+		//TODO Exclude right click
 		this->WindowState = FormWindowState::Normal;
 		//this->Show();
 		this->notifyIcon1->Icon = Icon->ExtractAssociatedIcon( "..//resource//ProgressSkip.ico" );
 	}
+	
+	System::Void MyForm_FormClosing( System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e ) {
+		if ( e->CloseReason == CloseReason::UserClosing )
+		{
+			e->Cancel = true;
+			this->WindowState = FormWindowState::Minimized;
+		}
+
+		return;
+	}
+
+
+	System::Void toolStripMenuItem1_Click( System::Object^  sender, System::EventArgs^  e ) {
+		this->Close();
+		return;
+	}
+	System::Void toolStripMenuItem2_Click( System::Object^  sender, System::EventArgs^  e ) {
+		this->WindowState = FormWindowState::Normal;
+		return;
+	}
+
+	Void 
 }
 	;
  }
