@@ -23,7 +23,7 @@ namespace BushWinApplication {
 			//
 			this->comboBox1->Items->Add( "COM1" );
 			this->comboBox1->Items->Add( "COM2" );
-			this->comboBox1->Items->Add( "COM3" );			
+			this->comboBox1->Items->Add( "COM3" );
 			//TODO add search for every serial port available
 
 
@@ -62,7 +62,7 @@ namespace BushWinApplication {
 	private:
 		/// <summary>
 		/// Required designer variable.
-		
+
 		/// </summary>
 
 
@@ -193,40 +193,39 @@ namespace BushWinApplication {
 
 		}
 #pragma endregion
-	private: 
-	System::Void MyForm_Load( System::Object^  sender, System::EventArgs^  e ) {
-	}
-	;
-	
-	System::Void notifyIcon1_MouseDoubleClick( System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e ) {
-		//TODO update form
-		//TODO Exclude right click
-		this->WindowState = FormWindowState::Normal;
-		//this->Show();
-		this->notifyIcon1->Icon = Icon->ExtractAssociatedIcon( "..//resource//ProgressSkip.ico" );
-	}
-	
-	System::Void MyForm_FormClosing( System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e ) {
-		if ( e->CloseReason == CloseReason::UserClosing )
-		{
-			e->Cancel = true;
-			this->WindowState = FormWindowState::Minimized;
+	private:
+		System::Void MyForm_Load( System::Object^  sender, System::EventArgs^  e ) {
+		}
+		;
+
+		System::Void notifyIcon1_MouseDoubleClick( System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e ) {
+			//TODO update form
+			//TODO Exclude right click
+			this->WindowState = FormWindowState::Normal;
+			//this->Show();
+			this->notifyIcon1->Icon = Icon->ExtractAssociatedIcon( "..//resource//ProgressSkip.ico" );
 		}
 
-		return;
-	}
+		System::Void MyForm_FormClosing( System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e ) {
+			if ( e->CloseReason == CloseReason::UserClosing )
+			{
+				e->Cancel = true;
+				this->WindowState = FormWindowState::Minimized;
+			}
+
+			return;
+		}
 
 
-	System::Void toolStripMenuItem1_Click( System::Object^  sender, System::EventArgs^  e ) {
-		this->Close();
-		return;
-	}
-	System::Void toolStripMenuItem2_Click( System::Object^  sender, System::EventArgs^  e ) {
-		this->WindowState = FormWindowState::Normal;
-		return;
-	}
+		System::Void toolStripMenuItem1_Click( System::Object^  sender, System::EventArgs^  e ) {
+			this->Close();
+			return;
+		}
+		System::Void toolStripMenuItem2_Click( System::Object^  sender, System::EventArgs^  e ) {
+			this->WindowState = FormWindowState::Normal;
+			return;
+		}
 
-	Void 
-}
-	;
+	};
+	
  }
