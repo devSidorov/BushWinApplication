@@ -13,15 +13,33 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\Include">
+      <UniqueIdentifier>{16f027f2-7946-4703-821e-b0d11ab91f50}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Include">
+      <UniqueIdentifier>{a8c7f8f8-c498-4380-bcc0-ef5ee389e2ff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MyForm.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Include\BushData.cpp">
+      <Filter>Source Files\Include</Filter>
+    </ClCompile>
+    <ClCompile Include="Include\SerialPortBush.cpp">
+      <Filter>Source Files\Include</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyForm.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\BushData.h">
+      <Filter>Header Files\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\SerialPortBush.h">
+      <Filter>Header Files\Include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -21,14 +21,14 @@ namespace BushWinApplication {
 			//
 			//TODO: Add the constructor code here
 			//
-			this->comboBox1->Items->Add( "COM1" );
-			this->comboBox1->Items->Add( "COM2" );
-			this->comboBox1->Items->Add( "COM3" );
-			//TODO add search for every serial port available
+			
+			//TODO add variant if no com port found
+			ReNew_ComPorts();
+			
 
 
 			String^ IcoName = "..//resource//ProgressWarn.ico";
-			this->notifyIcon1->Icon = Icon->ExtractAssociatedIcon( "..//resource//ProgressWarn.ico" );
+			this->trayNotification->Icon = Form::Icon->ExtractAssociatedIcon( "..//resource//ProgressWarn.ico" );
 		}
 
 	protected:
@@ -42,17 +42,30 @@ namespace BushWinApplication {
 				delete components;
 			}
 		}
+	private: System::Windows::Forms::Label^  labelPort;
+	protected:
 
 	protected:
-	private: System::Windows::Forms::Label^  label1;
+
 	private: System::Windows::Forms::CheckBox^  checkBox1;
 	private: System::Windows::Forms::CheckBox^  checkBox2;
-	private: System::Windows::Forms::ComboBox^  comboBox1;
-	private: System::Windows::Forms::NotifyIcon^  notifyIcon1;
-	private: System::Windows::Forms::ContextMenuStrip^  contextMenuStrip1;
-	private: System::Windows::Forms::ToolStripMenuItem^  toolStripMenuItem3;
-	private: System::Windows::Forms::ToolStripMenuItem^  toolStripMenuItem2;
-	private: System::Windows::Forms::ToolStripMenuItem^  toolStripMenuItem1;
+	private: System::Windows::Forms::ComboBox^  comBoxPortNames;
+	private: System::Windows::Forms::NotifyIcon^  trayNotification;
+
+
+
+	private: System::Windows::Forms::ContextMenuStrip^  trayMenu;
+	private: System::Windows::Forms::ToolStripMenuItem^  trayMenuItemDoor;
+
+
+
+
+	private: System::Windows::Forms::ToolStripMenuItem^  trayMenuItemSettings;
+
+	private: System::Windows::Forms::ToolStripMenuItem^  trayMenuItemExit;
+
+
+	private: System::Windows::Forms::Label^  label2;
 
 
 
@@ -65,6 +78,8 @@ namespace BushWinApplication {
 
 		/// </summary>
 
+		Int32 BushConnect( String^ pPortName );
+
 
 #pragma region Windows Form Designer generated code
 		/// <summary>
@@ -74,27 +89,28 @@ namespace BushWinApplication {
 		void InitializeComponent( void )
 		{
 			this->components = ( gcnew System::ComponentModel::Container() );
-			this->label1 = ( gcnew System::Windows::Forms::Label() );
+			this->labelPort = ( gcnew System::Windows::Forms::Label() );
 			this->checkBox1 = ( gcnew System::Windows::Forms::CheckBox() );
 			this->checkBox2 = ( gcnew System::Windows::Forms::CheckBox() );
-			this->comboBox1 = ( gcnew System::Windows::Forms::ComboBox() );
-			this->notifyIcon1 = ( gcnew System::Windows::Forms::NotifyIcon( this->components ) );
-			this->contextMenuStrip1 = ( gcnew System::Windows::Forms::ContextMenuStrip( this->components ) );
-			this->toolStripMenuItem3 = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
-			this->toolStripMenuItem2 = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
-			this->toolStripMenuItem1 = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
-			this->contextMenuStrip1->SuspendLayout();
+			this->comBoxPortNames = ( gcnew System::Windows::Forms::ComboBox() );
+			this->trayNotification = ( gcnew System::Windows::Forms::NotifyIcon( this->components ) );
+			this->trayMenu = ( gcnew System::Windows::Forms::ContextMenuStrip( this->components ) );
+			this->trayMenuItemDoor = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
+			this->trayMenuItemSettings = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
+			this->trayMenuItemExit = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
+			this->label2 = ( gcnew System::Windows::Forms::Label() );
+			this->trayMenu->SuspendLayout();
 			this->SuspendLayout();
 			// 
-			// label1
+			// labelPort
 			// 
-			this->label1->AutoSize = true;
-			this->label1->Location = System::Drawing::Point( 18, 21 );
-			this->label1->Margin = System::Windows::Forms::Padding( 4, 0, 4, 0 );
-			this->label1->Name = L"label1";
-			this->label1->Size = System::Drawing::Size( 47, 18 );
-			this->label1->TabIndex = 1;
-			this->label1->Text = L"Порт:";
+			this->labelPort->AutoSize = true;
+			this->labelPort->Location = System::Drawing::Point( 18, 21 );
+			this->labelPort->Margin = System::Windows::Forms::Padding( 4, 0, 4, 0 );
+			this->labelPort->Name = L"labelPort";
+			this->labelPort->Size = System::Drawing::Size( 47, 18 );
+			this->labelPort->TabIndex = 1;
+			this->labelPort->Text = L"Порт:";
 			// 
 			// checkBox1
 			// 
@@ -118,64 +134,74 @@ namespace BushWinApplication {
 			this->checkBox2->Text = L"Нотификация превышения температуры";
 			this->checkBox2->UseVisualStyleBackColor = true;
 			// 
-			// comboBox1
+			// comBoxPortNames
 			// 
-			this->comboBox1->FormattingEnabled = true;
-			this->comboBox1->Location = System::Drawing::Point( 73, 18 );
-			this->comboBox1->Name = L"comboBox1";
-			this->comboBox1->Size = System::Drawing::Size( 288, 26 );
-			this->comboBox1->TabIndex = 4;
-			this->comboBox1->Text = L"Необходимо выбрать порт подключения";
+			this->comBoxPortNames->FormattingEnabled = true;
+			this->comBoxPortNames->Location = System::Drawing::Point( 73, 18 );
+			this->comBoxPortNames->Name = L"comBoxPortNames";
+			this->comBoxPortNames->Size = System::Drawing::Size( 288, 26 );
+			this->comBoxPortNames->TabIndex = 4;
+			this->comBoxPortNames->Text = L"Необходимо выбрать порт подключения";
+			this->comBoxPortNames->SelectedIndexChanged += gcnew System::EventHandler( this, &MyForm::comBoxPortNames_SelectedIndexChanged );
 			// 
-			// notifyIcon1
+			// trayNotification
 			// 
-			this->notifyIcon1->ContextMenuStrip = this->contextMenuStrip1;
-			this->notifyIcon1->Text = L"notifyIcon1";
-			this->notifyIcon1->Visible = true;
-			this->notifyIcon1->MouseDoubleClick += gcnew System::Windows::Forms::MouseEventHandler( this, &MyForm::notifyIcon1_MouseDoubleClick );
+			this->trayNotification->ContextMenuStrip = this->trayMenu;
+			this->trayNotification->Text = L"notifyIcon1";
+			this->trayNotification->Visible = true;
+			this->trayNotification->MouseDoubleClick += gcnew System::Windows::Forms::MouseEventHandler( this, &MyForm::trayIcon_MouseDoubleClick );
 			// 
-			// contextMenuStrip1
+			// trayMenu
 			// 
-			this->contextMenuStrip1->Items->AddRange( gcnew cli::array< System::Windows::Forms::ToolStripItem^  >( 3 ) {
-				this->toolStripMenuItem3,
-					this->toolStripMenuItem2, this->toolStripMenuItem1
+			this->trayMenu->Items->AddRange( gcnew cli::array< System::Windows::Forms::ToolStripItem^  >( 3 ) {
+				this->trayMenuItemDoor, this->trayMenuItemSettings,
+					this->trayMenuItemExit
 			} );
-			this->contextMenuStrip1->Name = L"contextMenuStrip1";
-			this->contextMenuStrip1->Size = System::Drawing::Size( 134, 70 );
-			this->contextMenuStrip1->Text = L"notyfyIcon1Menu";
+			this->trayMenu->Name = L"contextMenuStrip1";
+			this->trayMenu->Size = System::Drawing::Size( 134, 70 );
+			this->trayMenu->Text = L"notyfyIcon1Menu";
 			// 
-			// toolStripMenuItem3
+			// trayMenuItemDoor
 			// 
-			this->toolStripMenuItem3->Name = L"toolStripMenuItem3";
-			this->toolStripMenuItem3->Size = System::Drawing::Size( 133, 22 );
-			this->toolStripMenuItem3->Text = L"Дверь";
+			this->trayMenuItemDoor->Name = L"trayMenuItemDoor";
+			this->trayMenuItemDoor->Size = System::Drawing::Size( 133, 22 );
+			this->trayMenuItemDoor->Text = L"Дверь";
 			// 
-			// toolStripMenuItem2
+			// trayMenuItemSettings
 			// 
-			this->toolStripMenuItem2->Name = L"toolStripMenuItem2";
-			this->toolStripMenuItem2->Size = System::Drawing::Size( 133, 22 );
-			this->toolStripMenuItem2->Text = L"Настройка";
-			this->toolStripMenuItem2->Click += gcnew System::EventHandler( this, &MyForm::toolStripMenuItem2_Click );
+			this->trayMenuItemSettings->Name = L"trayMenuItemSettings";
+			this->trayMenuItemSettings->Size = System::Drawing::Size( 133, 22 );
+			this->trayMenuItemSettings->Text = L"Настройка";
+			this->trayMenuItemSettings->Click += gcnew System::EventHandler( this, &MyForm::toolStripMenuItem2_Click );
 			// 
-			// toolStripMenuItem1
+			// trayMenuItemExit
 			// 
-			this->toolStripMenuItem1->Name = L"toolStripMenuItem1";
-			this->toolStripMenuItem1->Size = System::Drawing::Size( 133, 22 );
-			this->toolStripMenuItem1->Text = L"Выход";
-			this->toolStripMenuItem1->Click += gcnew System::EventHandler( this, &MyForm::toolStripMenuItem1_Click );
+			this->trayMenuItemExit->Name = L"trayMenuItemExit";
+			this->trayMenuItemExit->Size = System::Drawing::Size( 133, 22 );
+			this->trayMenuItemExit->Text = L"Выход";
+			this->trayMenuItemExit->Click += gcnew System::EventHandler( this, &MyForm::toolStripMenuItem1_Click );
+			// 
+			// label2
+			// 
+			this->label2->AutoSize = true;
+			this->label2->Location = System::Drawing::Point( 21, 116 );
+			this->label2->Name = L"label2";
+			this->label2->Size = System::Drawing::Size( 0, 18 );
+			this->label2->TabIndex = 5;
 			// 
 			// MyForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF( 9, 18 );
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size( 434, 172 );
-			this->Controls->Add( this->comboBox1 );
+			this->Controls->Add( this->label2 );
+			this->Controls->Add( this->comBoxPortNames );
 			this->Controls->Add( this->checkBox2 );
 			this->Controls->Add( this->checkBox1 );
-			this->Controls->Add( this->label1 );
+			this->Controls->Add( this->labelPort );
 			this->Cursor = System::Windows::Forms::Cursors::Default;
 			this->Font = ( gcnew System::Drawing::Font( L"Microsoft Sans Serif", 11.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast< System::Byte >( 204 ) ) );
+														static_cast< System::Byte >( 204 ) ) );
 			this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedSingle;
 			this->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
 			this->MaximizeBox = false;
@@ -187,7 +213,7 @@ namespace BushWinApplication {
 			this->WindowState = System::Windows::Forms::FormWindowState::Minimized;
 			this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler( this, &MyForm::MyForm_FormClosing );
 			this->Load += gcnew System::EventHandler( this, &MyForm::MyForm_Load );
-			this->contextMenuStrip1->ResumeLayout( false );
+			this->trayMenu->ResumeLayout( false );
 			this->ResumeLayout( false );
 			this->PerformLayout();
 
@@ -198,12 +224,12 @@ namespace BushWinApplication {
 		}
 		;
 
-		System::Void notifyIcon1_MouseDoubleClick( System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e ) {
+		System::Void trayIcon_MouseDoubleClick( System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e ) {
 			//TODO update form
 			//TODO Exclude right click
 			this->WindowState = FormWindowState::Normal;
 			//this->Show();
-			this->notifyIcon1->Icon = Icon->ExtractAssociatedIcon( "..//resource//ProgressSkip.ico" );
+			this->trayNotification->Icon = Icon->ExtractAssociatedIcon( "..//resource//ProgressSkip.ico" );
 		}
 
 		System::Void MyForm_FormClosing( System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e ) {
@@ -226,6 +252,22 @@ namespace BushWinApplication {
 			return;
 		}
 
-	};
+		System::Void ReNew_ComPorts() {
+			array<String^>^ serialPorts = nullptr;
+
+			serialPorts = IO::Ports::SerialPort::GetPortNames();
+			if( serialPorts )
+				for each( String^ port in serialPorts )
+					this->comBoxPortNames->Items->Add( port );
+		}
+	
+		System::Void comBoxPortNames_SelectedIndexChanged( System::Object^  sender, System::EventArgs^  e ) {
+			//TODO add first start check and closing previous serial port thread
+		
+
+			Int32 fSuccess = BushConnect( comBoxPortNames->SelectedItem->ToString() );
+
+		}
+};
 	
  }
