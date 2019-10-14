@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 namespace BushWinApplication {
 
@@ -94,7 +94,7 @@ namespace BushWinApplication {
 			this->label1->Name = L"label1";
 			this->label1->Size = System::Drawing::Size( 47, 18 );
 			this->label1->TabIndex = 1;
-			this->label1->Text = L"Ïîðò:";
+			this->label1->Text = L"ÐŸÐ¾Ñ€Ñ‚:";
 			// 
 			// checkBox1
 			// 
@@ -102,9 +102,9 @@ namespace BushWinApplication {
 			this->checkBox1->Location = System::Drawing::Point( 22, 54 );
 			this->checkBox1->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
 			this->checkBox1->Name = L"checkBox1";
-			this->checkBox1->Size = System::Drawing::Size( 323, 22 );
+			this->checkBox1->Size = System::Drawing::Size( 238, 22 );
 			this->checkBox1->TabIndex = 2;
-			this->checkBox1->Text = L"Âèçóàëüíàÿ ñèãíàëèçàöèÿ îòêðûòèÿ äâåðè";
+			this->checkBox1->Text = L"ÐÐ¾Ñ‚Ð¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ Ð¾Ñ‚ÐºÑ€Ñ‹Ñ‚Ð¸Ñ Ð´Ð²ÐµÑ€Ð¸";
 			this->checkBox1->UseVisualStyleBackColor = true;
 			// 
 			// checkBox2
@@ -113,9 +113,9 @@ namespace BushWinApplication {
 			this->checkBox2->Location = System::Drawing::Point( 22, 87 );
 			this->checkBox2->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
 			this->checkBox2->Name = L"checkBox2";
-			this->checkBox2->Size = System::Drawing::Size( 393, 22 );
+			this->checkBox2->Size = System::Drawing::Size( 308, 22 );
 			this->checkBox2->TabIndex = 3;
-			this->checkBox2->Text = L"Âèçóàëüíàÿ ñèãíàëèçàöèÿ ïðåâûøåíèÿ òåìïåðàòóðû";
+			this->checkBox2->Text = L"ÐÐ¾Ñ‚Ð¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ Ð¿Ñ€ÐµÐ²Ñ‹ÑˆÐµÐ½Ð¸Ñ Ñ‚ÐµÐ¼Ð¿ÐµÑ€Ð°Ñ‚ÑƒÑ€Ñ‹";
 			this->checkBox2->UseVisualStyleBackColor = true;
 			// 
 			// comboBox1
@@ -125,7 +125,7 @@ namespace BushWinApplication {
 			this->comboBox1->Name = L"comboBox1";
 			this->comboBox1->Size = System::Drawing::Size( 288, 26 );
 			this->comboBox1->TabIndex = 4;
-			this->comboBox1->Text = L"Âûáåðèòå ïîðò èç ñïèñêà";
+			this->comboBox1->Text = L"ÐÐµÐ¾Ð±Ñ…Ð¾Ð´Ð¸Ð¼Ð¾ Ð²Ñ‹Ð±Ñ€Ð°Ñ‚ÑŒ Ð¿Ð¾Ñ€Ñ‚ Ð¿Ð¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ñ";
 			// 
 			// notifyIcon1
 			// 
@@ -148,20 +148,20 @@ namespace BushWinApplication {
 			// 
 			this->toolStripMenuItem3->Name = L"toolStripMenuItem3";
 			this->toolStripMenuItem3->Size = System::Drawing::Size( 133, 22 );
-			this->toolStripMenuItem3->Text = L"Äâåðü";
+			this->toolStripMenuItem3->Text = L"Ð”Ð²ÐµÑ€ÑŒ";
 			// 
 			// toolStripMenuItem2
 			// 
 			this->toolStripMenuItem2->Name = L"toolStripMenuItem2";
 			this->toolStripMenuItem2->Size = System::Drawing::Size( 133, 22 );
-			this->toolStripMenuItem2->Text = L"Íàñòðîéêà";
+			this->toolStripMenuItem2->Text = L"ÐÐ°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ°";
 			this->toolStripMenuItem2->Click += gcnew System::EventHandler( this, &MyForm::toolStripMenuItem2_Click );
 			// 
 			// toolStripMenuItem1
 			// 
 			this->toolStripMenuItem1->Name = L"toolStripMenuItem1";
 			this->toolStripMenuItem1->Size = System::Drawing::Size( 133, 22 );
-			this->toolStripMenuItem1->Text = L"Âûõîä";
+			this->toolStripMenuItem1->Text = L"Ð’Ñ‹Ñ…Ð¾Ð´";
 			this->toolStripMenuItem1->Click += gcnew System::EventHandler( this, &MyForm::toolStripMenuItem1_Click );
 			// 
 			// MyForm
@@ -175,7 +175,7 @@ namespace BushWinApplication {
 			this->Controls->Add( this->label1 );
 			this->Cursor = System::Windows::Forms::Cursors::Default;
 			this->Font = ( gcnew System::Drawing::Font( L"Microsoft Sans Serif", 11.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-														static_cast< System::Byte >( 204 ) ) );
+				static_cast< System::Byte >( 204 ) ) );
 			this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedSingle;
 			this->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
 			this->MaximizeBox = false;
@@ -183,7 +183,7 @@ namespace BushWinApplication {
 			this->Name = L"MyForm";
 			this->RightToLeft = System::Windows::Forms::RightToLeft::No;
 			this->ShowInTaskbar = false;
-			this->Text = L"Íàñòðîéêà";
+			this->Text = L"ÐÐ°ÑÑ‚Ñ€Ð¾Ð¹ÐºÐ°";
 			this->WindowState = System::Windows::Forms::FormWindowState::Minimized;
 			this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler( this, &MyForm::MyForm_FormClosing );
 			this->Load += gcnew System::EventHandler( this, &MyForm::MyForm_Load );
@@ -218,7 +218,7 @@ namespace BushWinApplication {
 
 
 		System::Void toolStripMenuItem1_Click( System::Object^  sender, System::EventArgs^  e ) {
-			this->Close();
+			Application::Exit();
 			return;
 		}
 		System::Void toolStripMenuItem2_Click( System::Object^  sender, System::EventArgs^  e ) {
