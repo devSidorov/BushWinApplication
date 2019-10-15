@@ -2,8 +2,7 @@
 
 #include <windows.h>
 
-typedef struct bushData {
-	
+typedef struct {
 // info state:
 	BOOLEAN noiseGen; // noise generator or ASK
 	BOOLEAN relayState;
@@ -17,45 +16,57 @@ typedef struct bushData {
 	INT8 thirdTempSens;
 	INT8 fourthTempSens;
 
-	enum OPCODE {
-	// to bush
-		STATE_GET = 0x01,
-		TEMP_GET,
-		CONNECT_CHECK = 0x04,
-		LOCK_CHANGE,
-		RELAY_CHANGE = 0x07,
-    // from bush
-        TEMP_SENS_AVERAGE = 0x80, 
-		STATE_INFO,
-		STATE_CHANGE = 0x83,
-		CONNECT_FINE,
-		BUTTON_PUSH = 0x86,
-		TEMP_SENS_ONE = 0x91,
-		TEMP_SENS_TWO,
-		TEMP_SENS_THREE,
-		TEMP_SENS_FOUR,
-		ALERT_TEMP_SENS = 0xA1,
-		ALERT_BISH_BRISH,
-		ALERT_TEMP_OVERHEAT
-	} lastOpcode;
-
-	enum INFO_BYTE {
-		NO_INFO,
-		TEMP_AVERAGE = 0x80,
-		TEMP_ALL = 0x90,
-		TEMP_FIRST,
-		TEMP_SECOND,
-		TEMP_THIRD,
-		TEMP_FOURTH,
-		ON = 0x00,
-		OFF = 0xFF
-	};
 } DATABUSH, *LPDATABUSH;
 
 class BushData
 {
+private:
+	DATABUSH bushState;
+	enum COMMAND_TO_BUSH
+	{
+		NO_COMMAND,
+		CONNECT,
+		DISCONNECT,
+		OPEN_LOCK,
+		CLOSE_LOCK,
+		GET_TEMPRETURE
+	} command;
+
+	enum BUSH_STATUS {
+		NO_INFO,
+		CONNECTED,
+		READY,
+		DISCONNECTED
+	} status;
+
+	HANDLE hInfoChanged;
+	HANDLE hInfoMutex;
+	HANDLE hCommandEvent;
 public:
-	BushData();
-	~BushData();
+
+	BushData() {
+		SecureZeroMemory( &bushState, sizeof( DATABUSH ) );
+		hInfoChanged = CreateEvent( NULL, TRUE, FALSE, NULL );
+		hCommandEvent = CreateEvent( NULL, TRUE, FALSE, NULL );
+		hInfoMutex = CreateMutex( NULL, FALSE, NULL );
+	}
+
+	~BushData() {
+		CloseHandle( hInfoChanged );
+		CloseHandle( hInfoMutex );
+		CloseHandle( hCommandEvent );
+	}
+
+	BOOL IsDataChanged();
+	
+	DWORD SetData( DATABUSH& dataToSave );
+	DWORD GetData( DATABUSH& dataReturn );
+
+	DWORD SetStatus( BUSH_STATUS& );
+	BUSH_STATUS GetStatus();
+
+	HANDLE GetCommandEvent() { 
+		return hCommandEvent;
+	}
 };
 

@@ -1,12 +1,14 @@
 #include "MyForm.h"
+#include "Include/ThreadBushIO.h"
 
-#include "..\BushWinApplication\Include\SerialPortBush.h"
-#include "..\BushWinApplication\Include\BushData.h"
 #include <array>
 #include <msclr/marshal.h>
 
 using namespace System;
 using namespace System::Windows::Forms;
+
+BushData ITCdataBush;
+HANDLE hIObushThread = nullptr;
 
 [STAThreadAttribute]
 void Main( array<String^>^ args ) {
@@ -16,16 +18,26 @@ void Main( array<String^>^ args ) {
 	Application::Run( %form );
 }
 
-Int32 BushWinApplication::MyForm::BushConnect( String^ pPortName )
+Int32 BushWinApplication::MyForm::BushIOThreadStart( String^ pPortName )
 {
+	INTHREADDATA dataToThread;
 	// types change for use low functions
 	msclr::interop::marshal_context context;
-	const TCHAR* pName = context.marshal_as<const TCHAR*>( pPortName );
+	dataToThread.pPortName = context.marshal_as<const TCHAR*>( pPortName );
+	dataToThread.pBushData = &ITCdataBush;
 
-	SerialPortBush bush( pName );
-	bush.Open();
-	bush.Write( 0x04, 0x00 );
-	bush.Read();
-
-	return 0;
+	hIObushThread = CreateThread( nullptr, NULL, MainIOBushThread, &dataToThread, NULL, nullptr );
+	System::Diagnostics::Debug::Assert( hIObushThread, "ERROR! IO thread hasn't started" ); //TODO add error check
+	
+	return ERROR_SUCCESS;
 }
+
+Void BushWinApplication::MyForm::FormGuiEnable( bool isTRUE )
+{
+	comBoxPortNames->Enabled = isTRUE;
+}
+
+//func timer	
+//	check thread is runnig
+//	check if info changed
+//		get info to form

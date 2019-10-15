@@ -66,6 +66,24 @@ namespace BushWinApplication {
 
 
 	private: System::Windows::Forms::Label^  label2;
+	private: System::Windows::Forms::GroupBox^  groupBushInfo;
+	private: System::Windows::Forms::Label^  labelNameBushNoise;
+	private: System::Windows::Forms::Label^  labelNameBushRelay;
+	private: System::Windows::Forms::Label^  labelNameBushSens;
+	private: System::Windows::Forms::Label^  labelNameBushLock;
+	private: System::Windows::Forms::Label^  labelNameBushDoor;
+	private: System::Windows::Forms::Label^  labelNameBushConnect;
+	private: System::Windows::Forms::Label^  labelBushConnect;
+	private: System::Windows::Forms::Label^  labelBushDoor;
+	private: System::Windows::Forms::Label^  labelBushNoise;
+
+	private: System::Windows::Forms::Label^  labelBushRelay;
+	private: System::Windows::Forms::Label^  labelBushSens;
+	private: System::Windows::Forms::Label^  labelBushLock;
+	private: System::Windows::Forms::Timer^  timerCheckData;
+
+
+
 
 
 
@@ -78,7 +96,8 @@ namespace BushWinApplication {
 
 		/// </summary>
 
-		Int32 BushConnect( String^ pPortName );
+		Int32 BushIOThreadStart( String^ pPortName );
+		Void FormGuiEnable( bool isTRUE );
 
 
 #pragma region Windows Form Designer generated code
@@ -99,7 +118,22 @@ namespace BushWinApplication {
 			this->trayMenuItemSettings = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
 			this->trayMenuItemExit = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
 			this->label2 = ( gcnew System::Windows::Forms::Label() );
+			this->groupBushInfo = ( gcnew System::Windows::Forms::GroupBox() );
+			this->labelBushNoise = ( gcnew System::Windows::Forms::Label() );
+			this->labelBushRelay = ( gcnew System::Windows::Forms::Label() );
+			this->labelBushSens = ( gcnew System::Windows::Forms::Label() );
+			this->labelBushLock = ( gcnew System::Windows::Forms::Label() );
+			this->labelBushDoor = ( gcnew System::Windows::Forms::Label() );
+			this->labelBushConnect = ( gcnew System::Windows::Forms::Label() );
+			this->labelNameBushNoise = ( gcnew System::Windows::Forms::Label() );
+			this->labelNameBushRelay = ( gcnew System::Windows::Forms::Label() );
+			this->labelNameBushSens = ( gcnew System::Windows::Forms::Label() );
+			this->labelNameBushLock = ( gcnew System::Windows::Forms::Label() );
+			this->labelNameBushDoor = ( gcnew System::Windows::Forms::Label() );
+			this->labelNameBushConnect = ( gcnew System::Windows::Forms::Label() );
+			this->timerCheckData = ( gcnew System::Windows::Forms::Timer( this->components ) );
 			this->trayMenu->SuspendLayout();
+			this->groupBushInfo->SuspendLayout();
 			this->SuspendLayout();
 			// 
 			// labelPort
@@ -189,11 +223,142 @@ namespace BushWinApplication {
 			this->label2->Size = System::Drawing::Size( 0, 18 );
 			this->label2->TabIndex = 5;
 			// 
+			// groupBushInfo
+			// 
+			this->groupBushInfo->BackColor = System::Drawing::SystemColors::Control;
+			this->groupBushInfo->Controls->Add( this->labelBushNoise );
+			this->groupBushInfo->Controls->Add( this->labelBushRelay );
+			this->groupBushInfo->Controls->Add( this->labelBushSens );
+			this->groupBushInfo->Controls->Add( this->labelBushLock );
+			this->groupBushInfo->Controls->Add( this->labelBushDoor );
+			this->groupBushInfo->Controls->Add( this->labelBushConnect );
+			this->groupBushInfo->Controls->Add( this->labelNameBushNoise );
+			this->groupBushInfo->Controls->Add( this->labelNameBushRelay );
+			this->groupBushInfo->Controls->Add( this->labelNameBushSens );
+			this->groupBushInfo->Controls->Add( this->labelNameBushLock );
+			this->groupBushInfo->Controls->Add( this->labelNameBushDoor );
+			this->groupBushInfo->Controls->Add( this->labelNameBushConnect );
+			this->groupBushInfo->FlatStyle = System::Windows::Forms::FlatStyle::Flat;
+			this->groupBushInfo->Location = System::Drawing::Point( 12, 137 );
+			this->groupBushInfo->Name = L"groupBushInfo";
+			this->groupBushInfo->Size = System::Drawing::Size( 410, 126 );
+			this->groupBushInfo->TabIndex = 7;
+			this->groupBushInfo->TabStop = false;
+			this->groupBushInfo->Text = L"Состояние устройста:";
+			// 
+			// labelBushNoise
+			// 
+			this->labelBushNoise->BackColor = System::Drawing::SystemColors::Info;
+			this->labelBushNoise->Location = System::Drawing::Point( 319, 79 );
+			this->labelBushNoise->Name = L"labelBushNoise";
+			this->labelBushNoise->Size = System::Drawing::Size( 85, 18 );
+			this->labelBushNoise->TabIndex = 11;
+			// 
+			// labelBushRelay
+			// 
+			this->labelBushRelay->BackColor = System::Drawing::SystemColors::Info;
+			this->labelBushRelay->Location = System::Drawing::Point( 319, 51 );
+			this->labelBushRelay->Name = L"labelBushRelay";
+			this->labelBushRelay->Size = System::Drawing::Size( 85, 18 );
+			this->labelBushRelay->TabIndex = 10;
+			// 
+			// labelBushSens
+			// 
+			this->labelBushSens->BackColor = System::Drawing::SystemColors::Info;
+			this->labelBushSens->Location = System::Drawing::Point( 319, 24 );
+			this->labelBushSens->Name = L"labelBushSens";
+			this->labelBushSens->Size = System::Drawing::Size( 85, 18 );
+			this->labelBushSens->TabIndex = 9;
+			// 
+			// labelBushLock
+			// 
+			this->labelBushLock->BackColor = System::Drawing::SystemColors::Info;
+			this->labelBushLock->Location = System::Drawing::Point( 113, 79 );
+			this->labelBushLock->Name = L"labelBushLock";
+			this->labelBushLock->Size = System::Drawing::Size( 85, 18 );
+			this->labelBushLock->TabIndex = 8;
+			// 
+			// labelBushDoor
+			// 
+			this->labelBushDoor->BackColor = System::Drawing::SystemColors::Info;
+			this->labelBushDoor->Location = System::Drawing::Point( 113, 51 );
+			this->labelBushDoor->Name = L"labelBushDoor";
+			this->labelBushDoor->Size = System::Drawing::Size( 85, 18 );
+			this->labelBushDoor->TabIndex = 7;
+			// 
+			// labelBushConnect
+			// 
+			this->labelBushConnect->BackColor = System::Drawing::SystemColors::Info;
+			this->labelBushConnect->Location = System::Drawing::Point( 113, 24 );
+			this->labelBushConnect->Name = L"labelBushConnect";
+			this->labelBushConnect->Size = System::Drawing::Size( 85, 18 );
+			this->labelBushConnect->TabIndex = 6;
+			this->labelBushConnect->Text = L"Нет";
+			// 
+			// labelNameBushNoise
+			// 
+			this->labelNameBushNoise->AutoSize = true;
+			this->labelNameBushNoise->Location = System::Drawing::Point( 220, 79 );
+			this->labelNameBushNoise->Name = L"labelNameBushNoise";
+			this->labelNameBushNoise->Size = System::Drawing::Size( 68, 18 );
+			this->labelNameBushNoise->TabIndex = 5;
+			this->labelNameBushNoise->Text = L"ГШ/АСК:";
+			// 
+			// labelNameBushRelay
+			// 
+			this->labelNameBushRelay->AutoSize = true;
+			this->labelNameBushRelay->Location = System::Drawing::Point( 220, 51 );
+			this->labelNameBushRelay->Name = L"labelNameBushRelay";
+			this->labelNameBushRelay->Size = System::Drawing::Size( 47, 18 );
+			this->labelNameBushRelay->TabIndex = 4;
+			this->labelNameBushRelay->Text = L"Реле:";
+			// 
+			// labelNameBushSens
+			// 
+			this->labelNameBushSens->AutoSize = true;
+			this->labelNameBushSens->Location = System::Drawing::Point( 220, 24 );
+			this->labelNameBushSens->Name = L"labelNameBushSens";
+			this->labelNameBushSens->Size = System::Drawing::Size( 102, 18 );
+			this->labelNameBushSens->TabIndex = 3;
+			this->labelNameBushSens->Text = L"Температура:";
+			// 
+			// labelNameBushLock
+			// 
+			this->labelNameBushLock->AutoSize = true;
+			this->labelNameBushLock->Location = System::Drawing::Point( 7, 79 );
+			this->labelNameBushLock->Name = L"labelNameBushLock";
+			this->labelNameBushLock->Size = System::Drawing::Size( 58, 18 );
+			this->labelNameBushLock->TabIndex = 2;
+			this->labelNameBushLock->Text = L"Замок:";
+			// 
+			// labelNameBushDoor
+			// 
+			this->labelNameBushDoor->AutoSize = true;
+			this->labelNameBushDoor->Location = System::Drawing::Point( 7, 51 );
+			this->labelNameBushDoor->Name = L"labelNameBushDoor";
+			this->labelNameBushDoor->Size = System::Drawing::Size( 56, 18 );
+			this->labelNameBushDoor->TabIndex = 1;
+			this->labelNameBushDoor->Text = L"Дверь:";
+			// 
+			// labelNameBushConnect
+			// 
+			this->labelNameBushConnect->AutoSize = true;
+			this->labelNameBushConnect->Location = System::Drawing::Point( 7, 24 );
+			this->labelNameBushConnect->Name = L"labelNameBushConnect";
+			this->labelNameBushConnect->Size = System::Drawing::Size( 109, 18 );
+			this->labelNameBushConnect->TabIndex = 0;
+			this->labelNameBushConnect->Text = L"Подключение:";
+			// 
+			// timerCheckData
+			// 
+			this->timerCheckData->Interval = 500;
+			// 
 			// MyForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF( 9, 18 );
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size( 434, 172 );
+			this->ClientSize = System::Drawing::Size( 434, 353 );
+			this->Controls->Add( this->groupBushInfo );
 			this->Controls->Add( this->label2 );
 			this->Controls->Add( this->comBoxPortNames );
 			this->Controls->Add( this->checkBox2 );
@@ -214,6 +379,8 @@ namespace BushWinApplication {
 			this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler( this, &MyForm::MyForm_FormClosing );
 			this->Load += gcnew System::EventHandler( this, &MyForm::MyForm_Load );
 			this->trayMenu->ResumeLayout( false );
+			this->groupBushInfo->ResumeLayout( false );
+			this->groupBushInfo->PerformLayout();
 			this->ResumeLayout( false );
 			this->PerformLayout();
 
@@ -264,10 +431,10 @@ namespace BushWinApplication {
 		System::Void comBoxPortNames_SelectedIndexChanged( System::Object^  sender, System::EventArgs^  e ) {
 			//TODO add first start check and closing previous serial port thread
 		
-
-			Int32 fSuccess = BushConnect( comBoxPortNames->SelectedItem->ToString() );
-
+			FormGuiEnable( false );
+			Int32 fSuccess = BushIOThreadStart( comBoxPortNames->SelectedItem->ToString() );
 		}
+
 };
 	
  }

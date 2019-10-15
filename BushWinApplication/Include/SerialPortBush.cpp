@@ -19,16 +19,12 @@ DWORD SerialPortBush::ConnectPort()
 						   NULL,   //  default security attributes
 						   OPEN_EXISTING, // serial port default
 						   NULL,
-						   NULL ); // OPEN_EXISTING default 
-
-		if ( hCom == INVALID_HANDLE_VALUE )
-			printf( "CreateFile failed with error %d.\n", GetLastError() ); //TODO log!					
+						   NULL ); // OPEN_EXISTING default 		
 	}
 	
-	return ( hCom == INVALID_HANDLE_VALUE )? ERROR_ACCESS_DENIED : NULL;
+	return ( hCom != INVALID_HANDLE_VALUE )? ERROR_SUCCESS : ERROR_PORT_UNREACHABLE;
 }
 
-//TODO add inplimintation
 DWORD SerialPortBush::ConfigPort()
 {
 	_DCB portConfig;
@@ -41,15 +37,20 @@ DWORD SerialPortBush::ConfigPort()
 	portConfig.ByteSize = 0x08; //Standart packet
 
 	DWORD fSuccess = SetCommState( hCom, &portConfig );
+	System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Setting config for port! {0:X}", GetLastError() ) );
 	if ( !fSuccess )
-		printf( "ERROR setting port DCB  %X.\n", GetLastError() ); //TODO log!
+		return ERROR_PORT_NOT_SET;
 	
 	//set event - first char from port
 	fSuccess = SetCommMask( hCom, EV_RXCHAR );
+	System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Setting mask config for port! {0:X}", GetLastError() ) );
 	if ( !fSuccess )
-		printf( "ERROR setting port DCB  %X.\n", GetLastError() ); //TODO log!
+		return ERROR_PORT_NOT_SET;
 
-	return fSuccess;
+	fSuccess = PurgeComm( hCom, PURGE_RXABORT | PURGE_RXCLEAR | PURGE_TXABORT | PURGE_TXCLEAR ); // clear buffer
+	System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Clearing buffer port! {0:X}", GetLastError() ) );
+
+	return ERROR_SUCCESS;
 }
 
 //Read input buffer, dont log firstbyte error because its signal of clean buffer
@@ -69,22 +70,20 @@ BYTE SerialPortBush::ReadPort( BYTE& opcodeByte, BYTE& infoByte ,BOOL firstRead 
 	{
 		if ( bufferRead[FIRST_BYTE] != firstByte )
 		{
-			if ( firstRead )
-				printf( "ERROR! First byte wrong: %X\n", bufferRead[FIRST_BYTE] );
+			System::Diagnostics::Debug::Assert( !firstRead, "ERROR! First byte wrong from bush" ); //TODO normal error handling				
 		}			
 		else if ( bufferRead[CACHE_BYTE] != dallas_crc8( bufferRead + 1, INFO_BYTES ) )
-			printf( "ERROR! Wrong checksum byte!\n" );
+			System::Diagnostics::Debug::Assert( FALSE, "ERROR! Cache byte wrong from bush" ); //TODO normal error handling
 		else
 		{
 			opcodeByte = bufferRead[OPCODE_BYTE];
-			infoByte = bufferRead[INFO_BYTE];
-			printf( "Opcode: %X, Info: %X\n", bufferRead[OPCODE_BYTE], bufferRead[INFO_BYTE] );
+			infoByte = bufferRead[INFO_BYTE];			
 		}
 			
 	}
 	else
 	{
-		printf( "Read failed %X.\n", GetLastError() );
+		System::Diagnostics::Debug::Assert( TRUE, "ERROR! Read from port failed" ); //TODO normal error handling
 	}
 	
 	return bufferRead[FIRST_BYTE];
@@ -103,22 +102,21 @@ DWORD SerialPortBush::WritePort( BYTE opcodeByte, BYTE infoByte )
 								&bytesIOoperated,
 								NULL );
 	
-	if ( !fSuccess )
-	{
-		printf( "Write failed %X.\n", GetLastError() );
-	}
+	System::Diagnostics::Debug::Assert( fSuccess, "ERROR! Write to port failed" ); //TODO normal error handling
 	
 	return 0;
 }
 
 DWORD SerialPortBush::Open()
 {
-	//TODO add try throw catch
-	ConnectPort();
-	ConfigPort();	
-	return 0;
+	DWORD fSuccess = ConnectPort();
+	if ( !fSuccess )
+		fSuccess = ConfigPort();	
+
+	return fSuccess;
 }
 
+//TODO add waitable opcode, and answer if it was in bytes
 DWORD SerialPortBush::Read()
 {
 	BYTE aByteRead[INFO_BYTES] = { 0, 0 };
@@ -136,6 +134,8 @@ DWORD SerialPortBush::Write( const BYTE opcodeByte, const BYTE infoByte )
 	WritePort( opcodeByte, infoByte );
 	return 0;
 }
+
+
 
 BYTE SerialPortBush::dallas_crc8( const BYTE * dataCheck, UINT sizeData )
 {
