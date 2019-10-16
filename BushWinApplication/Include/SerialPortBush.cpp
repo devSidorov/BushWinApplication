@@ -116,15 +116,118 @@ DWORD SerialPortBush::Open()
 	return fSuccess;
 }
 
-//TODO add waitable opcode, and answer if it was in bytes
+//reads input and parses result into data struct and status value
 DWORD SerialPortBush::Read()
 {
-	BYTE aByteRead[INFO_BYTES] = { 0, 0 };
+	BYTE opcodeByte = 0;
+	BYTE infoByte = 0;
 	
 	//one or more read to clean input buffer
-	BYTE result = ReadPort( aByteRead[0], aByteRead[1] );
+	BYTE result = ReadPort( opcodeByte, infoByte );	
 	while ( result )
-		result = ReadPort( aByteRead[0], aByteRead[1], FALSE );
+	{
+		ParseInput( opcodeByte, infoByte );
+		result = ReadPort( opcodeByte, infoByte, FALSE );
+	}
+		
+	return 0;
+}
+
+
+//reads input and parses result into data struct and status value
+//return TRUE is chekable opcode was in input
+DWORD SerialPortBush::Read( BYTE checkOpcode )
+{
+	BOOL bWasOpcodeReaden = FALSE;
+	BYTE opcodeByte = 0;
+	BYTE infoByte = 0;
+
+	//one or more read to clean input buffer
+	ReadPort( opcodeByte, infoByte );	
+	while ( opcodeByte )
+	{
+		if ( opcodeByte == checkOpcode )
+			bWasOpcodeReaden = TRUE;
+		ParseInput( opcodeByte, infoByte );
+		ReadPort( opcodeByte, infoByte, FALSE );
+	}
+
+	return bWasOpcodeReaden;
+}
+
+DWORD SerialPortBush::ParseStateByte( BYTE infoByte )
+{
+	for ( int bitPosition = INFO_BYTE_BITS::DOOR; bitPosition <= INFO_BYTE_BITS::NOISE; bitPosition++ )
+		bushState.info[bitPosition] = ( infoByte >> bitPosition )&0x01;
+	
+	return ERROR_SUCCESS;
+}
+
+DWORD SerialPortBush::ParseChangeByte( BYTE infoByte )
+{
+	for ( int bitPosition = INFO_BYTE_BITS::DOOR; bitPosition <= INFO_BYTE_BITS::NOISE; bitPosition++ )
+		if ( ( infoByte >> bitPosition ) & 0x01 )
+		{
+			bushState.info[bitPosition] = !bushState.info[bitPosition];
+			return ERROR_SUCCESS;
+		}
+		
+	System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Wrong info opcode from bush! {0:X}", infoByte ) );
+	return ERROR_INVALID_PARAMETER;
+}
+
+DWORD SerialPortBush::ParseInput( BYTE opcodeByte, BYTE infoByte )
+{
+	switch ( opcodeByte )
+	{
+	case OPCODE::TEMP_SENS_AVERAGE:
+		bushState.averageTemp = infoByte; //TODO change temp handling
+		break;
+	case OPCODE::STATE_INFO:
+		ParseStateByte( infoByte );
+		break;
+	case OPCODE::STATE_CHANGE:
+		ParseChangeByte( infoByte );
+		break;
+	case OPCODE::CONNECT_FINE:
+		bushStatus = BUSH_STATUS::CONNECTED;
+		System::Diagnostics::Debug::Assert( !infoByte, System::String::Format( "ERROR! Wrong info opcode from bush! {0:X}", infoByte ) );
+		break;
+	case OPCODE::BUTTON_PUSH:
+		//TODO add implementation
+		break;
+	case OPCODE::TEMP_SENS_ONE:
+		bushState.firstTempSens = infoByte;
+		break;
+	case OPCODE::TEMP_SENS_TWO:
+		bushState.secondTempSens = infoByte;
+		break;
+	case OPCODE::TEMP_SENS_THREE:
+		bushState.thirdTempSens = infoByte;
+		break;		
+	case OPCODE::TEMP_SENS_FOUR:
+		bushState.fourthTempSens = infoByte;
+		break;
+	case OPCODE::ALERT_TEMP_SENS:
+		bushStatus = BUSH_STATUS::HEAT_SENS_ERR;
+		//TODO add implementation for infobyte		
+		System::Diagnostics::Debug::Assert( !infoByte, System::String::Format( "ERROR! Wrong info opcode from bush! {0:X}", infoByte ) );
+		break;
+	case OPCODE::ALERT_BISH_BRISH:
+		bushStatus = BUSH_STATUS::BUSH_BRISH_ERR;
+		System::Diagnostics::Debug::Assert( !infoByte, System::String::Format( "ERROR! Wrong info opcode from bush! {0:X}", infoByte ) );
+		break;
+	case OPCODE::ALERT_TEMP_OVERHEAT:		
+		bushStatus = BUSH_STATUS::OVERHEATED;
+		System::Diagnostics::Debug::Assert( !infoByte, System::String::Format( "ERROR! Wrong info opcode from bush! {0:X}", infoByte ) );
+		break;
+	default:
+		//TODO add throw to place where will be state change
+		//TODO add log
+		//TODO error if open close door fast
+		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Wrong opcode from bush! {0:X}", opcodeByte ) );
+		break;
+	}
 	
 	return 0;
 }
@@ -134,6 +237,8 @@ DWORD SerialPortBush::Write( const BYTE opcodeByte, const BYTE infoByte )
 	WritePort( opcodeByte, infoByte );
 	return 0;
 }
+
+
 
 
 

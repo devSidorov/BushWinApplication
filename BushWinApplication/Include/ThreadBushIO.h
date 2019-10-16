@@ -11,4 +11,5 @@ typedef struct InThreadData
 } INTHREADDATA, *LPINTHREADDATA;
 
 DWORD WINAPI MainIOBushThread( LPVOID lpParam );
+DWORD InputBushHandle( SerialPortBush& bushPort, BushData* pDataITC );
 

@@ -33,37 +33,44 @@ DWORD WINAPI MainIOBushThread( LPVOID lpParam )
 	haEvHandler[COMMAND] = pDataITC->GetCommandEvent();
 	HANDLE hComPort = bushPort.GetHandle();
 
-	//TODO clean buffer
+	DWORD dWaitTime = INFINITE;
 
 	while ( TRUE )
 	{
 		//Thread waiting for first character in input buffer
-
 		haEvHandler[EVENT_ARR::BUSH_INPUT] = CreateThread( NULL, 0, FromBushThread, hComPort, 0, NULL );
 		System::Diagnostics::Debug::Assert( haEvHandler[EVENT_ARR::BUSH_INPUT], "ERROR! Starting wait from bush thread!" );
 
 		fSuccess = WaitForMultipleObjects( evCount,
 										   haEvHandler,
 										   FALSE,
-										   INFINITE );
+										   dWaitTime );
 		switch ( fSuccess )
 		{
 		case WAIT_OBJECT_0: //CommandEvent
 			TerminateThread( haEvHandler, NULL );
-							//TODO add implementation
+			
 			break;
 		case ( WAIT_OBJECT_0 + EVENT_ARR::BUSH_INPUT ): //Something from Bush
-			//TODO add implementation
+			InputBushHandle( bushPort, pDataITC );
 			break;
 		case WAIT_ABANDONED_0:
 		case ( WAIT_ABANDONED_0 + EVENT_ARR::BUSH_INPUT ):
 		case WAIT_TIMEOUT:
 		case WAIT_FAILED:
 		default:
-			System::Diagnostics::Debug::Assert( fSuccess, "ERROR! Wait for events returned error" );
+			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Wait for events returned {0:X} error {0:X}", fSuccess, GetLastError() ) );
 		}
 	}
 
+	//TODO add status and its processing then thread is ended for gui
+	return ERROR_SUCCESS;
+}
+
+DWORD InputBushHandle( SerialPortBush& bushPort, BushData* pDataITC )
+{ 
+	bushPort.Read();
+	pDataITC->SetData( bushPort.GetState(), bushPort.GetStatus() );
 
 	return ERROR_SUCCESS;
 }

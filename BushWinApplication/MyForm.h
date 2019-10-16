@@ -293,7 +293,6 @@ namespace BushWinApplication {
 			this->labelBushConnect->Name = L"labelBushConnect";
 			this->labelBushConnect->Size = System::Drawing::Size( 85, 18 );
 			this->labelBushConnect->TabIndex = 6;
-			this->labelBushConnect->Text = L"Нет";
 			// 
 			// labelNameBushNoise
 			// 
@@ -352,6 +351,7 @@ namespace BushWinApplication {
 			// timerCheckData
 			// 
 			this->timerCheckData->Interval = 500;
+			this->timerCheckData->Tick += gcnew System::EventHandler( this, &MyForm::timerCheckData_Tick );
 			// 
 			// MyForm
 			// 
@@ -418,6 +418,9 @@ namespace BushWinApplication {
 			this->WindowState = FormWindowState::Normal;
 			return;
 		}
+		System::Void timerCheckData_Tick( System::Object^  sender, System::EventArgs^  e ) {
+			OnTimerUpdate();
+		}
 
 		System::Void ReNew_ComPorts() {
 			array<String^>^ serialPorts = nullptr;
@@ -435,6 +438,7 @@ namespace BushWinApplication {
 			Int32 fSuccess = BushIOThreadStart( comBoxPortNames->SelectedItem->ToString() );
 		}
 
+		Int32 OnTimerUpdate();
 };
 	
  }

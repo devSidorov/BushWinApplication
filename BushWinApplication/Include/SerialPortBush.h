@@ -4,6 +4,7 @@
 #include <tchar.h>
 #include <stdio.h>
 #include <iostream>
+#include "BushData.h"
 
 enum OPCODE {
 	// to bush
@@ -39,8 +40,6 @@ enum INFO_BYTE {
 	OFF = 0xFF
 };
 
-const BYTE BYTES_IO = 4;
-const BYTE INFO_BYTES = 2;
 enum {
 	FIRST_BYTE,
 	OPCODE_BYTE,
@@ -48,11 +47,15 @@ enum {
 	CACHE_BYTE
 };
 const BYTE firstByte = 0xAA;
+const BYTE BYTES_IO = 4;
+const BYTE INFO_BYTES = 2;
 
 class SerialPortBush
 {
 private:
-
+	
+	BUSH_STATUS bushStatus;
+	DATABUSH bushState;
 	TCHAR caPortName[MAX_PATH];
 	HANDLE hCom;
 
@@ -65,7 +68,9 @@ public:
 	}
 
 	SerialPortBush() {
+		bushStatus = BUSH_STATUS::NO_STATUS;
 		SecureZeroMemory( &caPortName, sizeof( TCHAR ) * MAX_PATH );
+		SecureZeroMemory( &bushState, sizeof( DATABUSH ) );
 		hCom = INVALID_HANDLE_VALUE;
 	}
 	SerialPortBush( const TCHAR* pcPortName ) : SerialPortBush() {
@@ -79,13 +84,26 @@ private:
 	BYTE ReadPort( BYTE& opcodeByte, BYTE& infoByte, BOOL firstRead = TRUE );
 	DWORD WritePort( const BYTE opcodeByte, const BYTE infoByte );
 
+	DWORD ParseInput( BYTE opcodeByte, BYTE infoByte );
+	DWORD ParseStateByte( BYTE infoByte );
+	DWORD ParseChangeByte( BYTE infoByte );
+
 	BYTE dallas_crc8( const BYTE * dataCheck = NULL, UINT sizeData = 0 );
 
 public:
 	DWORD Open();
 	DWORD Read();
-	DWORD Write( const BYTE opcodeByte, const BYTE infoByte );
+	DWORD Read( BYTE checkOpcode );
 	
+	BUSH_STATUS GetStatus() {
+		return bushStatus;
+	}
+	const DATABUSH& GetState() { 
+		return bushState;
+	}
+	
+	DWORD Write( const BYTE opcodeByte, const BYTE infoByte );
+		
 	HANDLE GetHandle() { 
 		return hCom; 
 	}
