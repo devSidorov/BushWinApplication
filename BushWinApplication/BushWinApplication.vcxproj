@@ -139,14 +139,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Include\BushData.cpp" />
+    <ClCompile Include="Include\BushInOutInterpretator.cpp" />
     <ClCompile Include="Include\SerialPortBush.cpp" />
-    <ClCompile Include="Include\ThreadBushIO.cpp" />
     <ClCompile Include="MyForm.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Include\BushData.h" />
+    <ClInclude Include="Include\BushInOutInterpretator.h" />
     <ClInclude Include="Include\SerialPortBush.h" />
-    <ClInclude Include="Include\ThreadBushIO.h" />
     <ClInclude Include="MyForm.h">
       <FileType>CppForm</FileType>
     </ClInclude>

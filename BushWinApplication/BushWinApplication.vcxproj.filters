@@ -30,7 +30,7 @@
     <ClCompile Include="Include\SerialPortBush.cpp">
       <Filter>Source Files\Include</Filter>
     </ClCompile>
-    <ClCompile Include="Include\ThreadBushIO.cpp">
+    <ClCompile Include="Include\BushInOutInterpretator.cpp">
       <Filter>Source Files\Include</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,7 +44,7 @@
     <ClInclude Include="Include\SerialPortBush.h">
       <Filter>Header Files\Include</Filter>
     </ClInclude>
-    <ClInclude Include="Include\ThreadBushIO.h">
+    <ClInclude Include="Include\BushInOutInterpretator.h">
       <Filter>Header Files\Include</Filter>
     </ClInclude>
   </ItemGroup>

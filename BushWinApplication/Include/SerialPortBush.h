@@ -7,8 +7,9 @@
 #include "BushData.h"
 
 enum OPCODE {
+	NOT_VALUE,
 	// to bush
-	STATE_GET = 0x01,
+	STATE_GET,
 	TEMP_GET,
 	CONNECT_CHECK = 0x04,
 	LOCK_CHANGE,
@@ -53,7 +54,7 @@ const BYTE INFO_BYTES = 2;
 class SerialPortBush
 {
 private:
-	
+protected:	
 	BUSH_STATUS bushStatus;
 	DATABUSH bushState;
 	TCHAR caPortName[MAX_PATH];
@@ -76,7 +77,9 @@ public:
 	SerialPortBush( const TCHAR* pcPortName ) : SerialPortBush() {
 		SetPortName( pcPortName );
 	}
-	~SerialPortBush();
+	~SerialPortBush() { 
+		CloseHandle( hCom );
+	}
 
 private:
 	DWORD ConnectPort();

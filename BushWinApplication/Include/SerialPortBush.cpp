@@ -1,13 +1,5 @@
 #include "SerialPortBush.h"
 
-
-
-SerialPortBush::~SerialPortBush()
-{
-	CloseHandle( hCom );
-}
-
-
 DWORD SerialPortBush::ConnectPort()
 {
 	
