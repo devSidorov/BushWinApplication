@@ -2,108 +2,111 @@
 
 
 
-DWORD BushInOutInterpretator::Start()
+DWORD BushInOutInterpretator::fnStart()
 {
 	DWORD fSuccess = Open();
 	System::Diagnostics::Debug::Assert( !fSuccess, "ERROR! While openning port!" );
 	
-	ConnectCheck();
+	fnConnectCheck();
 	return ERROR_SUCCESS;
 }
 
 
-DWORD BushInOutInterpretator::Finish()
+DWORD BushInOutInterpretator::fnFinish()
 {
 	//TODO add port close and memory clean if needed
 	//TODO add command send that thread is ended
 	return 0;
 }
 
-DWORD BushInOutInterpretator::DefaultWait()
+DWORD BushInOutInterpretator::fnDefaultWait()
 {
-	waitForOpcode = OPCODE::NOT_VALUE;
-	dWaitTime = INFINITE; 
+	m_waitForOpcode = OPCODE::NOT_VALUE;
+	m_dwWaitTime = M_WAIT_TIME_UPDATE;
+	bFirstTimeoutErr = 0;
 
 	return ERROR_SUCCESS;
 }
 
-DWORD BushInOutInterpretator::ConnectCheck()
+DWORD BushInOutInterpretator::fnConnectCheck()
 {
 	Write( OPCODE::CONNECT_CHECK, INFO_BYTE::NO_INFO );
-	pDataITC->SetData( BUSH_STATUS::DISCONNECTED );
-	script = BUSH_SCRIPT::INIT;
-	waitForOpcode = OPCODE::CONNECT_FINE;
-	dWaitTime = 2000;
+	m_pDataITC->SetData( BUSH_STATUS::DISCONNECTED );
+	m_script = BUSH_SCRIPT::INIT;
+	m_waitForOpcode = OPCODE::CONNECT_FINE;
+	m_dwWaitTime = M_WAIT_TIME_DEFAULT;
+	bFirstTimeoutErr = 0;
 
 	return ERROR_SUCCESS;
 }
 
-DWORD BushInOutInterpretator::AskState()
+DWORD BushInOutInterpretator::fnAskState()
 {
 	Write( OPCODE::STATE_GET, INFO_BYTE::NO_INFO );
-	waitForOpcode = OPCODE::STATE_INFO;
-	dWaitTime = 2000;
+	m_waitForOpcode = OPCODE::STATE_INFO;
+	m_dwWaitTime = M_WAIT_TIME_DEFAULT;
 
 	return ERROR_SUCCESS;
 }
 
 
-BOOL BushInOutInterpretator::WaitForNextIO()
+BOOL BushInOutInterpretator::fnWaitForNextIO()
 {
 	BOOL IsCommandNotDissconnect = TRUE;
 
-	haEvHandler[EVENT_ARR::BUSH_INPUT] = CreateThread( NULL, 0, FromBushThread, this, 0, NULL );
-	System::Diagnostics::Debug::Assert( haEvHandler[EVENT_ARR::BUSH_INPUT], "ERROR! Starting wait from bush thread!" );
+	m_haEvHandler[EVENT_ARR::BUSH_INPUT] = CreateThread( NULL, 0, fnFromBushThread, this, 0, NULL );
+	System::Diagnostics::Debug::Assert( m_haEvHandler[EVENT_ARR::BUSH_INPUT], "ERROR! Starting wait from bush thread!" );
 	
 	//TODO add state check timer
 	DWORD fSuccess = WaitForMultipleObjects( EV_COUNT,
-											 haEvHandler,
+											 m_haEvHandler,
 											 FALSE,
-											 INFINITE );
+											 m_dwWaitTime );
 	switch ( fSuccess )
 	{
 	case WAIT_OBJECT_0: //CommandEvent
-		TerminateThread( haEvHandler[EVENT_ARR::BUSH_INPUT], NULL );
+		TerminateThread( m_haEvHandler[EVENT_ARR::BUSH_INPUT], NULL );
 		break;
 	case ( WAIT_OBJECT_0 + EVENT_ARR::BUSH_INPUT ): //Something from Bush
-		InputBushHandle();
+		fnInputBushHandle();
 		break;
 	case WAIT_TIMEOUT:
-		TerminateThread( haEvHandler[EVENT_ARR::BUSH_INPUT], NULL );
+		TerminateThread( m_haEvHandler[EVENT_ARR::BUSH_INPUT], NULL );
+		fnTimerWaitHandle();
 		break;
 	case WAIT_ABANDONED_0:
 	case ( WAIT_ABANDONED_0 + EVENT_ARR::BUSH_INPUT ):	
 	case WAIT_FAILED:
 	default:
-		TerminateThread( haEvHandler[EVENT_ARR::BUSH_INPUT], NULL );
+		TerminateThread( m_haEvHandler[EVENT_ARR::BUSH_INPUT], NULL );
 		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Wait for events returned {0:X} error {0:X}", fSuccess, GetLastError() ) );
 	}
 
 	return IsCommandNotDissconnect;
 }
 
-DWORD BushInOutInterpretator::InputBushHandle()
+DWORD BushInOutInterpretator::fnInputBushHandle()
 {
 	DWORD returnedOpcode = 0;
-	GetExitCodeThread( haEvHandler[EVENT_ARR::BUSH_INPUT], &returnedOpcode );
+	GetExitCodeThread( m_haEvHandler[EVENT_ARR::BUSH_INPUT], &returnedOpcode );
 
-	if ( returnedOpcode == waitForOpcode )
+	if ( returnedOpcode == m_waitForOpcode )
 	{
-		switch ( script )
+		switch ( m_script )
 		{
 		case BUSH_SCRIPT::NO_SCRIPT:
 			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! If its no script read must not be here" ) );
 			break;
 		case BUSH_SCRIPT::INIT:
-			if ( waitForOpcode == OPCODE::CONNECT_FINE )
-				AskState();
-			else if ( waitForOpcode == OPCODE::STATE_INFO )
+			if ( m_waitForOpcode == OPCODE::CONNECT_FINE )
+				fnAskState();
+			else if ( m_waitForOpcode == OPCODE::STATE_INFO )
 			{
-				pDataITC->SetData( bushState, bushStatus );
-				DefaultWait();
+				m_pDataITC->SetData( bushState, bushStatus );
+				fnDefaultWait();
 			}			
 			else 
-				System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Must not be here script -{0:X}", ( DWORD )script ) );
+				System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Must not be here script -{0:X}", ( DWORD )m_script ) );
 			break;
 		case BUSH_SCRIPT::LOCK_LOCK:
 		case BUSH_SCRIPT::LOCK_UNLOCK:
@@ -112,42 +115,77 @@ DWORD BushInOutInterpretator::InputBushHandle()
 		case BUSH_SCRIPT::RELAY_UNLOCK:
 			break;
 		case BUSH_SCRIPT::GET_TEMPRETURE:
-			break;
+			break;		
+		default:
+			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Check, no processing for this script name!" ) );
 		}
 	}
 	else
 	{
 		// if no wait its free state, and bush can give new status, if waiting for opcode only data must change
-		if ( waitForOpcode )
-			pDataITC->SetData( bushState );
+		if ( m_waitForOpcode )
+			m_pDataITC->SetData( bushState );
 		else
-			pDataITC->SetData( bushState, bushStatus );
+			m_pDataITC->SetData( bushState, bushStatus );
 	}
 	
 	return ERROR_SUCCESS;
 }
 
-DWORD WINAPI FromBushThread( LPVOID lpParam )
+DWORD BushInOutInterpretator::fnTimerWaitHandle()
 {
+	switch ( m_script )
 	{
-		DWORD evtMask = EV_RXCHAR;
-		BushInOutInterpretator* pBush = ( BushInOutInterpretator* )lpParam;
-		HANDLE hCom = pBush->GetHandle();
-		
-		WaitCommEvent( hCom, &evtMask, NULL );
-		DWORD fSuccess = pBush->Read();
-		
-		return fSuccess;
+	case BUSH_SCRIPT::NO_SCRIPT:
+		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! If its no script read must not be here" ) );
+		break;
+	case BUSH_SCRIPT::INIT:
+		if ( m_waitForOpcode == OPCODE::CONNECT_FINE )
+			fnConnectCheck();
+		else if ( m_waitForOpcode == OPCODE::STATE_INFO )
+		{
+			m_pDataITC->SetData( bushState, bushStatus );
+			fnDefaultWait();
+		}
+		else
+			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Must not be here script -{0:X}", ( DWORD )m_script ) );
+		break;
+	case BUSH_SCRIPT::LOCK_LOCK:
+	case BUSH_SCRIPT::LOCK_UNLOCK:
+		break;
+	case BUSH_SCRIPT::RELAY_LOCK:
+	case BUSH_SCRIPT::RELAY_UNLOCK:
+		break;
+	case BUSH_SCRIPT::GET_TEMPRETURE:
+		break;
+	default:
+		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Check, no processing for this script name!" ) );
 	}
+
+	return ERROR_SUCCESS;
 }
 
-DWORD WINAPI MainIOBushThread( LPVOID lpParam )
+DWORD WINAPI fnFromBushThread( LPVOID lpParam )
+{
+	
+	BushInOutInterpretator* pBush = ( BushInOutInterpretator* )lpParam;
+	DWORD fSuccess = ERROR_UNIDENTIFIED_ERROR;
+	DWORD opcodeReaden = OPCODE::NOT_VALUE;
+		
+	do	{
+		fSuccess = pBush->Read( opcodeReaden );
+	} while ( fSuccess );	
+		
+	return opcodeReaden;
+}
+
+DWORD WINAPI fnMainIOBushThread( LPVOID lpParam )
 {
 	BushInOutInterpretator BushConnect( ( ( LPINTHREADDATA )lpParam )->pBushData, ( ( LPINTHREADDATA )lpParam )->pPortName );
-	BushConnect.Start();
+	BushConnect.fnStart();
 
-	while ( BushConnect.WaitForNextIO() );
+	while ( BushConnect.fnWaitForNextIO() );
 
-	BushConnect.Finish();
+	BushConnect.fnFinish();
 	return ERROR_SUCCESS;
 }

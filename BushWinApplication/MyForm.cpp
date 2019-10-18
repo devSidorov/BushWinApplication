@@ -26,7 +26,7 @@ Int32 BushWinApplication::MyForm::BushIOThreadStart( String^ pPortName )
 	dataToThread.pPortName = context.marshal_as<const TCHAR*>( pPortName );
 	dataToThread.pBushData = &ITCdataBush;
 	
-	hIObushThread = CreateThread( nullptr, NULL, MainIOBushThread, &dataToThread, NULL, nullptr );
+	hIObushThread = CreateThread( nullptr, NULL, fnMainIOBushThread, &dataToThread, NULL, nullptr );
 	System::Diagnostics::Debug::Assert( hIObushThread, "ERROR! IO thread hasn't started" ); //TODO add error check
 
 	timerCheckData->Enabled = TRUE;

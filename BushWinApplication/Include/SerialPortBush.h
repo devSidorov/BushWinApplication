@@ -92,8 +92,7 @@ enum INPUT_PACKET{
 	CACHE_BYTE,
 	COUNT_BYTE
 };
-const BYTE firstByte = 0xAA;
-const BYTE BYTES_IO = 4;
+const BYTE FIRST_BYTE_VALUE = 0xAA;
 const BYTE INFO_BYTES = 2;
 
 class SerialPortBush
@@ -129,7 +128,7 @@ public:
 private:
 	DWORD ConnectPort();
 	DWORD ConfigPort();
-	BYTE ReadPort( BYTE& opcodeByte, BYTE& infoByte, BOOL firstRead = TRUE );
+	DWORD ReadPort( BYTE& opcodeByte, BYTE& infoByte, BOOL firstRead = TRUE );
 	DWORD WritePort( const BYTE opcodeByte, const BYTE infoByte );
 
 	DWORD ParseInput( BYTE opcodeByte, BYTE infoByte );
@@ -140,9 +139,7 @@ private:
 
 public:
 	DWORD Open();
-	DWORD Read();
-	DWORD ReadLoop();
-	DWORD Read( BYTE checkOpcode );
+	DWORD Read( DWORD& opcodeReaden );
 	
 	BUSH_STATUS GetStatus() {
 		return bushStatus;

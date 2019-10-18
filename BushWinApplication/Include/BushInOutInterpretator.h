@@ -2,6 +2,9 @@
 #include "SerialPortBush.h"
 #include "BushData.h"
 
+const WORD M_WAIT_TIME_DEFAULT = 1000;
+const WORD M_WAIT_TIME_UPDATE = 5000;
+
 class BushInOutInterpretator : public SerialPortBush
 {
 private:
@@ -11,56 +14,61 @@ private:
 		EV_COUNT
 	};
 		
-	BushData* pDataITC;
-	HANDLE haEvHandler[EV_COUNT];
-	BYTE waitForOpcode;
-	BUSH_SCRIPT script;
-	DWORD dWaitTime;
-	DWORD dWaitIterator;
+	BushData* m_pDataITC;
+	HANDLE m_haEvHandler[EV_COUNT];
+	BYTE m_waitForOpcode;
+	BUSH_SCRIPT m_script;
+	DWORD m_dwWaitTime;
+	BOOL bFirstTimeoutErr;
+
+	
 
 private:
-	VOID SecureClassMemory() {
-		pDataITC = nullptr;
-		SecureZeroMemory( haEvHandler, sizeof( HANDLE )*EV_COUNT );
-		waitForOpcode = OPCODE::NOT_VALUE;
-		script = BUSH_SCRIPT::NO_SCRIPT;
-		dWaitTime = INFINITE;
-		dWaitIterator = 0;
+	VOID fnSecureClassMemory() {
+		m_pDataITC = nullptr;
+		SecureZeroMemory( m_haEvHandler, sizeof( HANDLE )*EV_COUNT );
+		m_waitForOpcode = OPCODE::NOT_VALUE;
+		m_script = BUSH_SCRIPT::NO_SCRIPT;
+		m_dwWaitTime = INFINITE;
+		bFirstTimeoutErr = 0;
 
 	}
 
 public:
 	BushInOutInterpretator( BushData* pDataToITC, const TCHAR* pcBushPortName ) : SerialPortBush( pcBushPortName ) {
-		SecureClassMemory();
-		pDataITC = pDataToITC;
-		haEvHandler[EVENT_ARR::COMMAND] = pDataITC->GetCommandEvent();
+		fnSecureClassMemory();
+		m_pDataITC = pDataToITC;
+		m_haEvHandler[EVENT_ARR::COMMAND] = m_pDataITC->GetCommandEvent();
 	}
 	~BushInOutInterpretator() { 
 		for ( int i = 0; i < EV_COUNT; i++ )
-			CloseHandle( haEvHandler[i] );
-		pDataITC = nullptr;
+			CloseHandle( m_haEvHandler[i] );
+		m_pDataITC = nullptr;
 	}
 
-	DWORD Start();
+	DWORD fnStart();
 
-	DWORD Finish();
+	DWORD fnFinish();
 
-	BOOL WaitForNextIO();
-	DWORD InputBushHandle();
+	BOOL fnWaitForNextIO();
+
 
 private:
-	DWORD DefaultWait();
-	DWORD ConnectCheck();
-	DWORD AskState();
+	DWORD fnDefaultWait();
+	DWORD fnConnectCheck();
+	DWORD fnAskState();
+
+	DWORD fnInputBushHandle();
+	DWORD fnTimerWaitHandle();
 };
 
 
 
-DWORD WINAPI FromBushThread( LPVOID lpParam );
+DWORD WINAPI fnFromBushThread( LPVOID lpParam );
 typedef struct InThreadData
 {
 	const TCHAR* pPortName;
 	BushData* pBushData;
 } INTHREADDATA, *LPINTHREADDATA;
 
-DWORD WINAPI MainIOBushThread( LPVOID lpParam );
+DWORD WINAPI fnMainIOBushThread( LPVOID lpParam );
