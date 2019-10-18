@@ -4,7 +4,15 @@
 #include <tchar.h>
 #include <stdio.h>
 #include <iostream>
-#include "BushData.h"
+
+enum BUSH_STATUS {
+	NO_STATUS,
+	DISCONNECTED,
+	CONNECTED = 0x84, //similar to bush Opcode
+	HEAT_SENS_ERR = 0xA1,
+	BUSH_BRISH_ERR,
+	OVERHEATED
+};
 
 enum OPCODE {
 	NOT_VALUE,
@@ -40,6 +48,42 @@ enum INFO_BYTE {
 	ON = 0x00,
 	OFF = 0xFF
 };
+
+enum INFO_BYTE_BITS {
+	DOOR,
+	LOCK,
+	OVERHEAT,
+	RELAY,
+	NOISE,
+	RES1,
+	RES2,
+	RES3,
+	BYTE_COUNT
+};
+
+enum BUSH_SCRIPT
+{
+	NO_SCRIPT,
+	INIT,
+	LOCK_LOCK,
+	LOCK_UNLOCK,
+	RELAY_LOCK,
+	RELAY_UNLOCK,
+	GET_TEMPRETURE,
+	DISCONNECT //TODO delete if dont need
+};
+
+typedef struct {
+	// info state:	
+	BOOLEAN info[INFO_BYTE_BITS::BYTE_COUNT];
+	// temp sensors:
+	INT8 averageTemp;
+	INT8 firstTempSens;
+	INT8 secondTempSens;
+	INT8 thirdTempSens;
+	INT8 fourthTempSens;
+
+} DATABUSH, *LPDATABUSH;
 
 enum {
 	FIRST_BYTE,

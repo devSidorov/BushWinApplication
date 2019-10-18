@@ -1,5 +1,7 @@
 #pragma once
 #include "SerialPortBush.h"
+#include "BushData.h"
+
 class BushInOutInterpretator : public SerialPortBush
 {
 private:
@@ -8,18 +10,23 @@ private:
 		BUSH_INPUT,
 		EV_COUNT
 	};
-
+		
 	BushData* pDataITC;
 	HANDLE haEvHandler[EV_COUNT];
 	BYTE waitForOpcode;
+	BUSH_SCRIPT script;
 	DWORD dWaitTime;
+	DWORD dWaitIterator;
 
 private:
 	VOID SecureClassMemory() {
 		pDataITC = nullptr;
 		SecureZeroMemory( haEvHandler, sizeof( HANDLE )*EV_COUNT );
 		waitForOpcode = OPCODE::NOT_VALUE;
+		script = BUSH_SCRIPT::NO_SCRIPT;
 		dWaitTime = INFINITE;
+		dWaitIterator = 0;
+
 	}
 
 public:
@@ -35,11 +42,25 @@ public:
 	}
 
 	DWORD Start();
+
 	DWORD Finish();
 
 	BOOL WaitForNextIO();
-	DWORD InputBushHandle();	
+	DWORD InputBushHandle();
+
+private:
+	DWORD DefaultWait();
+	DWORD ConnectCheck();
+	DWORD AskState();
 };
 
-DWORD WINAPI FromBushThread( LPVOID lpParam );
 
+
+DWORD WINAPI FromBushThread( LPVOID lpParam );
+typedef struct InThreadData
+{
+	const TCHAR* pPortName;
+	BushData* pBushData;
+} INTHREADDATA, *LPINTHREADDATA;
+
+DWORD WINAPI MainIOBushThread( LPVOID lpParam );

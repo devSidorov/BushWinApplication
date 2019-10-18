@@ -108,23 +108,59 @@ DWORD SerialPortBush::Open()
 	return fSuccess;
 }
 
+////reads input and parses result into data struct and status value
+//DWORD SerialPortBush::Read()
+//{
+//	BYTE opcodeByte = 0;
+//	BYTE infoByte = 0;
+//	
+//	//one or more read to clean input buffer
+//	BYTE result = ReadPort( opcodeByte, infoByte );	
+//	while ( result )
+//	{
+//		ParseInput( opcodeByte, infoByte );
+//		result = ReadPort( opcodeByte, infoByte, FALSE );
+//	}
+//		
+//	return 0;
+//}
+
 //reads input and parses result into data struct and status value
 DWORD SerialPortBush::Read()
 {
 	BYTE opcodeByte = 0;
 	BYTE infoByte = 0;
-	
+
 	//one or more read to clean input buffer
-	BYTE result = ReadPort( opcodeByte, infoByte );	
-	while ( result )
-	{
-		ParseInput( opcodeByte, infoByte );
-		result = ReadPort( opcodeByte, infoByte, FALSE );
-	}
-		
+	BYTE result = ReadPort( opcodeByte, infoByte );
+	ParseInput( opcodeByte, infoByte );
+	
 	return 0;
 }
 
+
+////reads input and parses result into data struct and status value
+////return TRUE is chekable opcode was in input
+//DWORD SerialPortBush::Read( BYTE checkOpcode )
+//{
+//	BOOL bWasOpcodeReaden = FALSE;
+//	BYTE opcodeByte = 0;
+//	BYTE infoByte = 0;
+//	INT32 i = 0;
+//
+//	//one or more read to clean input buffer
+//	ReadPort( opcodeByte, infoByte );	
+//	while ( opcodeByte )
+//	{
+//		if ( opcodeByte == checkOpcode )
+//			bWasOpcodeReaden = TRUE;
+//		ParseInput( opcodeByte, infoByte );
+//		ReadPort( opcodeByte, infoByte, FALSE );
+//		i++;
+//	}
+//
+//	return bWasOpcodeReaden;
+//}
 
 //reads input and parses result into data struct and status value
 //return TRUE is chekable opcode was in input
@@ -133,17 +169,14 @@ DWORD SerialPortBush::Read( BYTE checkOpcode )
 	BOOL bWasOpcodeReaden = FALSE;
 	BYTE opcodeByte = 0;
 	BYTE infoByte = 0;
+	INT32 i = 0;
 
 	//one or more read to clean input buffer
-	ReadPort( opcodeByte, infoByte );	
-	while ( opcodeByte )
-	{
-		if ( opcodeByte == checkOpcode )
-			bWasOpcodeReaden = TRUE;
-		ParseInput( opcodeByte, infoByte );
-		ReadPort( opcodeByte, infoByte, FALSE );
-	}
-
+	ReadPort( opcodeByte, infoByte );
+	if ( opcodeByte == checkOpcode )
+		bWasOpcodeReaden = TRUE;
+	ParseInput( opcodeByte, infoByte );
+		
 	return bWasOpcodeReaden;
 }
 

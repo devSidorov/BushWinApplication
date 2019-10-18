@@ -18,23 +18,6 @@ void Main( array<String^>^ args ) {
 	Application::Run( %form );
 }
 
-typedef struct InThreadData
-{
-	const TCHAR* pPortName;
-	BushData* pBushData;
-} INTHREADDATA, *LPINTHREADDATA;
-
-DWORD WINAPI MainIOBushThread( LPVOID lpParam )
-{
-	BushInOutInterpretator BushConnect( ( ( LPINTHREADDATA )lpParam )->pBushData, ( ( LPINTHREADDATA )lpParam )->pPortName );
-	BushConnect.Start();
-
-	while ( BushConnect.WaitForNextIO() );
-
-	BushConnect.Finish();
-	return ERROR_SUCCESS;
-}
-
 Int32 BushWinApplication::MyForm::BushIOThreadStart( String^ pPortName )
 {
 	INTHREADDATA dataToThread;
