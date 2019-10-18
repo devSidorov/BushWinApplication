@@ -3,7 +3,7 @@
 #include "BushData.h"
 
 const WORD M_WAIT_TIME_DEFAULT = 1000;
-const WORD M_WAIT_TIME_UPDATE = 5000;
+const WORD M_WAIT_TIME_UPDATE = 10000;
 
 class BushInOutInterpretator : public SerialPortBush
 {
@@ -19,7 +19,7 @@ private:
 	BYTE m_waitForOpcode;
 	BUSH_SCRIPT m_script;
 	DWORD m_dwWaitTime;
-	BOOL bFirstTimeoutErr;
+	BOOL m_bRepeatErr;
 
 	
 
@@ -30,7 +30,7 @@ private:
 		m_waitForOpcode = OPCODE::NOT_VALUE;
 		m_script = BUSH_SCRIPT::NO_SCRIPT;
 		m_dwWaitTime = INFINITE;
-		bFirstTimeoutErr = 0;
+		m_bRepeatErr = FALSE;
 
 	}
 
@@ -56,6 +56,8 @@ public:
 private:
 	DWORD fnDefaultWait();
 	DWORD fnConnectCheck();
+	DWORD fnAskStateInit();
+
 	DWORD fnAskState();
 
 	DWORD fnInputBushHandle();

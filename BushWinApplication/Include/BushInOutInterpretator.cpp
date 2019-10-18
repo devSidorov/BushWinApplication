@@ -21,9 +21,10 @@ DWORD BushInOutInterpretator::fnFinish()
 
 DWORD BushInOutInterpretator::fnDefaultWait()
 {
+	m_script = BUSH_SCRIPT::NO_SCRIPT;
 	m_waitForOpcode = OPCODE::NOT_VALUE;
 	m_dwWaitTime = M_WAIT_TIME_UPDATE;
-	bFirstTimeoutErr = 0;
+	m_bRepeatErr = FALSE;
 
 	return ERROR_SUCCESS;
 }
@@ -34,17 +35,26 @@ DWORD BushInOutInterpretator::fnConnectCheck()
 	m_pDataITC->SetData( BUSH_STATUS::DISCONNECTED );
 	m_script = BUSH_SCRIPT::INIT;
 	m_waitForOpcode = OPCODE::CONNECT_FINE;
+	m_dwWaitTime = M_WAIT_TIME_DEFAULT;	
+
+	return ERROR_SUCCESS;
+}
+
+// function must be without script setting because some scripts use it to greed BUSH
+DWORD BushInOutInterpretator::fnAskStateInit()
+{
+	Write( OPCODE::STATE_GET, INFO_BYTE::NO_INFO );
+	m_waitForOpcode = OPCODE::STATE_INFO;
 	m_dwWaitTime = M_WAIT_TIME_DEFAULT;
-	bFirstTimeoutErr = 0;
+	m_bRepeatErr = FALSE;
 
 	return ERROR_SUCCESS;
 }
 
 DWORD BushInOutInterpretator::fnAskState()
 {
-	Write( OPCODE::STATE_GET, INFO_BYTE::NO_INFO );
-	m_waitForOpcode = OPCODE::STATE_INFO;
-	m_dwWaitTime = M_WAIT_TIME_DEFAULT;
+	m_script = BUSH_SCRIPT::INIT;
+	fnAskStateInit();
 
 	return ERROR_SUCCESS;
 }
@@ -54,7 +64,7 @@ BOOL BushInOutInterpretator::fnWaitForNextIO()
 {
 	BOOL IsCommandNotDissconnect = TRUE;
 
-	m_haEvHandler[EVENT_ARR::BUSH_INPUT] = CreateThread( NULL, 0, fnFromBushThread, this, 0, NULL );
+	m_haEvHandler[EVENT_ARR::BUSH_INPUT] = CreateThread( NULL, 0, fnFromBushThread, this, 0, NULL ); //TODO dont reCreate a thread add a thread where last info will be rewritten
 	System::Diagnostics::Debug::Assert( m_haEvHandler[EVENT_ARR::BUSH_INPUT], "ERROR! Starting wait from bush thread!" );
 	
 	//TODO add state check timer
@@ -99,7 +109,7 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 			break;
 		case BUSH_SCRIPT::INIT:
 			if ( m_waitForOpcode == OPCODE::CONNECT_FINE )
-				fnAskState();
+				fnAskStateInit();
 			else if ( m_waitForOpcode == OPCODE::STATE_INFO )
 			{
 				m_pDataITC->SetData( bushState, bushStatus );
@@ -137,15 +147,17 @@ DWORD BushInOutInterpretator::fnTimerWaitHandle()
 	switch ( m_script )
 	{
 	case BUSH_SCRIPT::NO_SCRIPT:
-		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! If its no script read must not be here" ) );
+		fnAskState();
 		break;
 	case BUSH_SCRIPT::INIT:
 		if ( m_waitForOpcode == OPCODE::CONNECT_FINE )
 			fnConnectCheck();
 		else if ( m_waitForOpcode == OPCODE::STATE_INFO )
 		{
-			m_pDataITC->SetData( bushState, bushStatus );
-			fnDefaultWait();
+			if ( m_bRepeatErr )
+				m_bRepeatErr = TRUE;
+			else
+				fnConnectCheck();
 		}
 		else
 			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Must not be here script -{0:X}", ( DWORD )m_script ) );
