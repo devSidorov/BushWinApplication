@@ -48,12 +48,12 @@ DWORD SerialPortBush::ConfigPort()
 //Read input buffer, dont log firstbyte error because its signal of clean buffer
 BYTE SerialPortBush::ReadPort( BYTE& opcodeByte, BYTE& infoByte ,BOOL firstRead )
 {
-	BYTE bufferRead[BYTES_IO] = { 0,0,0,0 };
+	BYTE bufferRead[COUNT_BYTE] = { 0,0,0,0 };
 	DWORD bytesIOoperated;
 	
 	DWORD fSuccess = ReadFile( hCom,
 							   bufferRead,
-							   BYTES_IO,
+							   COUNT_BYTE,
 							   &bytesIOoperated,
 							   NULL );
 	
@@ -81,14 +81,14 @@ BYTE SerialPortBush::ReadPort( BYTE& opcodeByte, BYTE& infoByte ,BOOL firstRead 
 
 DWORD SerialPortBush::WritePort( BYTE opcodeByte, BYTE infoByte )
 {
-	BYTE bufferWrite[BYTES_IO] = { firstByte, opcodeByte, infoByte, 0 };
+	BYTE bufferWrite[COUNT_BYTE] = { firstByte, opcodeByte, infoByte, 0 };
 	DWORD bytesIOoperated;
 	
 	bufferWrite[3] = dallas_crc8( bufferWrite + 1, INFO_BYTES );
 
 	DWORD fSuccess = WriteFile( hCom,
 								bufferWrite,
-								BYTES_IO,
+								COUNT_BYTE,
 								&bytesIOoperated,
 								NULL );
 	

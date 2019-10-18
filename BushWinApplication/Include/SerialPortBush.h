@@ -58,7 +58,7 @@ enum INFO_BYTE_BITS {
 	RES1,
 	RES2,
 	RES3,
-	BYTE_COUNT
+	BIT_COUNT
 };
 
 enum BUSH_SCRIPT
@@ -75,7 +75,7 @@ enum BUSH_SCRIPT
 
 typedef struct {
 	// info state:	
-	BOOLEAN info[INFO_BYTE_BITS::BYTE_COUNT];
+	BOOLEAN info[INFO_BYTE_BITS::BIT_COUNT];
 	// temp sensors:
 	INT8 averageTemp;
 	INT8 firstTempSens;
@@ -85,11 +85,12 @@ typedef struct {
 
 } DATABUSH, *LPDATABUSH;
 
-enum {
+enum INPUT_PACKET{
 	FIRST_BYTE,
 	OPCODE_BYTE,
 	INFO_BYTE,
-	CACHE_BYTE
+	CACHE_BYTE,
+	COUNT_BYTE
 };
 const BYTE firstByte = 0xAA;
 const BYTE BYTES_IO = 4;

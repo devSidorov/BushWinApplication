@@ -130,21 +130,13 @@ DWORD BushInOutInterpretator::InputBushHandle()
 DWORD WINAPI FromBushThread( LPVOID lpParam )
 {
 	{
+		DWORD evtMask = EV_RXCHAR;
 		BushInOutInterpretator* pBush = ( BushInOutInterpretator* )lpParam;
 		HANDLE hCom = pBush->GetHandle();
-
+		
+		WaitCommEvent( hCom, &evtMask, NULL );
 		DWORD fSuccess = pBush->Read();
-		if ( !fSuccess )
-		{
-			DWORD evtMask = EV_RXCHAR;
-			fSuccess = SetCommMask( hCom, evtMask );
-			System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Setting mask config for port! {0:X}", GetLastError() ) );
-			fSuccess = WaitCommEvent( hCom, &evtMask, NULL );
-			System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Waiting for event! {0:X}", GetLastError() ) );
-			fSuccess = pBush->ReadLoop();
-			System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Reading from port zero opcode! {0:X}", GetLastError() ) );
-		}			
-
+		
 		return fSuccess;
 	}
 }
