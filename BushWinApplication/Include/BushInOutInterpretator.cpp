@@ -33,7 +33,7 @@ DWORD BushInOutInterpretator::ConnectCheck()
 	pDataITC->SetData( BUSH_STATUS::DISCONNECTED );
 	script = BUSH_SCRIPT::INIT;
 	waitForOpcode = OPCODE::CONNECT_FINE;
-	dWaitTime = 1000;
+	dWaitTime = 2000;
 
 	return ERROR_SUCCESS;
 }
@@ -42,7 +42,7 @@ DWORD BushInOutInterpretator::AskState()
 {
 	Write( OPCODE::STATE_GET, INFO_BYTE::NO_INFO );
 	waitForOpcode = OPCODE::STATE_INFO;
-	dWaitTime = 1000;
+	dWaitTime = 2000;
 
 	return ERROR_SUCCESS;
 }
@@ -52,14 +52,14 @@ BOOL BushInOutInterpretator::WaitForNextIO()
 {
 	BOOL IsCommandNotDissconnect = TRUE;
 
-	haEvHandler[EVENT_ARR::BUSH_INPUT] = CreateThread( NULL, 0, FromBushThread, &hCom, 0, NULL );
+	haEvHandler[EVENT_ARR::BUSH_INPUT] = CreateThread( NULL, 0, FromBushThread, this, 0, NULL );
 	System::Diagnostics::Debug::Assert( haEvHandler[EVENT_ARR::BUSH_INPUT], "ERROR! Starting wait from bush thread!" );
 	
 	//TODO add state check timer
 	DWORD fSuccess = WaitForMultipleObjects( EV_COUNT,
 											 haEvHandler,
 											 FALSE,
-											 dWaitTime );
+											 INFINITE );
 	switch ( fSuccess )
 	{
 	case WAIT_OBJECT_0: //CommandEvent
@@ -84,10 +84,10 @@ BOOL BushInOutInterpretator::WaitForNextIO()
 
 DWORD BushInOutInterpretator::InputBushHandle()
 {
-	DWORD fSuccess = 0;
-	
-	fSuccess = Read( waitForOpcode );
-	if ( fSuccess )
+	DWORD returnedOpcode = 0;
+	GetExitCodeThread( haEvHandler[EVENT_ARR::BUSH_INPUT], &returnedOpcode );
+
+	if ( returnedOpcode == waitForOpcode )
 	{
 		switch ( script )
 		{
@@ -130,13 +130,22 @@ DWORD BushInOutInterpretator::InputBushHandle()
 DWORD WINAPI FromBushThread( LPVOID lpParam )
 {
 	{
-		const HANDLE hComPort = *( ( HANDLE* )lpParam );
-		DWORD evtMask = NULL;
+		BushInOutInterpretator* pBush = ( BushInOutInterpretator* )lpParam;
+		HANDLE hCom = pBush->GetHandle();
 
-		DWORD fSuccess = WaitCommEvent( hComPort, &evtMask, NULL );
-		System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Waiting event from port! {0:X}", GetLastError() ) );
+		DWORD fSuccess = pBush->Read();
+		if ( !fSuccess )
+		{
+			DWORD evtMask = EV_RXCHAR;
+			fSuccess = SetCommMask( hCom, evtMask );
+			System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Setting mask config for port! {0:X}", GetLastError() ) );
+			fSuccess = WaitCommEvent( hCom, &evtMask, NULL );
+			System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Waiting for event! {0:X}", GetLastError() ) );
+			fSuccess = pBush->ReadLoop();
+			System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Reading from port zero opcode! {0:X}", GetLastError() ) );
+		}			
 
-		return evtMask;
+		return fSuccess;
 	}
 }
 

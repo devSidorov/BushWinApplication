@@ -140,6 +140,7 @@ private:
 public:
 	DWORD Open();
 	DWORD Read();
+	DWORD ReadLoop();
 	DWORD Read( BYTE checkOpcode );
 	
 	BUSH_STATUS GetStatus() {

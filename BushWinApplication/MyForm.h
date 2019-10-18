@@ -24,7 +24,7 @@ namespace BushWinApplication {
 			
 			//TODO add variant if no com port found
 			ReNew_ComPorts();
-			
+			StatusLabelUpdate( 0 );
 
 
 			String^ IcoName = "..//resource//ProgressWarn.ico";
@@ -67,7 +67,7 @@ namespace BushWinApplication {
 
 	private: System::Windows::Forms::Label^  label2;
 	private: System::Windows::Forms::GroupBox^  groupBushInfo;
-	private: System::Windows::Forms::Label^  labelNameBushNoise;
+
 	private: System::Windows::Forms::Label^  labelNameBushRelay;
 	private: System::Windows::Forms::Label^  labelNameBushSens;
 	private: System::Windows::Forms::Label^  labelNameBushLock;
@@ -75,7 +75,7 @@ namespace BushWinApplication {
 	private: System::Windows::Forms::Label^  labelNameBushConnect;
 	private: System::Windows::Forms::Label^  labelBushConnect;
 	private: System::Windows::Forms::Label^  labelBushDoor;
-	private: System::Windows::Forms::Label^  labelBushNoise;
+
 
 	private: System::Windows::Forms::Label^  labelBushRelay;
 	private: System::Windows::Forms::Label^  labelBushSens;
@@ -99,6 +99,10 @@ namespace BushWinApplication {
 		Int32 BushIOThreadStart( String^ pPortName );
 		Void FormGuiEnable( bool isTRUE );
 
+		Void InfoLabelsReset();
+
+		Void StatusLabelUpdate( const Int32& bushStatus );
+
 
 #pragma region Windows Form Designer generated code
 		/// <summary>
@@ -119,13 +123,11 @@ namespace BushWinApplication {
 			this->trayMenuItemExit = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
 			this->label2 = ( gcnew System::Windows::Forms::Label() );
 			this->groupBushInfo = ( gcnew System::Windows::Forms::GroupBox() );
-			this->labelBushNoise = ( gcnew System::Windows::Forms::Label() );
 			this->labelBushRelay = ( gcnew System::Windows::Forms::Label() );
 			this->labelBushSens = ( gcnew System::Windows::Forms::Label() );
 			this->labelBushLock = ( gcnew System::Windows::Forms::Label() );
 			this->labelBushDoor = ( gcnew System::Windows::Forms::Label() );
 			this->labelBushConnect = ( gcnew System::Windows::Forms::Label() );
-			this->labelNameBushNoise = ( gcnew System::Windows::Forms::Label() );
 			this->labelNameBushRelay = ( gcnew System::Windows::Forms::Label() );
 			this->labelNameBushSens = ( gcnew System::Windows::Forms::Label() );
 			this->labelNameBushLock = ( gcnew System::Windows::Forms::Label() );
@@ -226,13 +228,11 @@ namespace BushWinApplication {
 			// groupBushInfo
 			// 
 			this->groupBushInfo->BackColor = System::Drawing::SystemColors::Control;
-			this->groupBushInfo->Controls->Add( this->labelBushNoise );
 			this->groupBushInfo->Controls->Add( this->labelBushRelay );
 			this->groupBushInfo->Controls->Add( this->labelBushSens );
 			this->groupBushInfo->Controls->Add( this->labelBushLock );
 			this->groupBushInfo->Controls->Add( this->labelBushDoor );
 			this->groupBushInfo->Controls->Add( this->labelBushConnect );
-			this->groupBushInfo->Controls->Add( this->labelNameBushNoise );
 			this->groupBushInfo->Controls->Add( this->labelNameBushRelay );
 			this->groupBushInfo->Controls->Add( this->labelNameBushSens );
 			this->groupBushInfo->Controls->Add( this->labelNameBushLock );
@@ -246,18 +246,10 @@ namespace BushWinApplication {
 			this->groupBushInfo->TabStop = false;
 			this->groupBushInfo->Text = L"Состояние устройста:";
 			// 
-			// labelBushNoise
-			// 
-			this->labelBushNoise->BackColor = System::Drawing::SystemColors::Info;
-			this->labelBushNoise->Location = System::Drawing::Point( 319, 79 );
-			this->labelBushNoise->Name = L"labelBushNoise";
-			this->labelBushNoise->Size = System::Drawing::Size( 85, 18 );
-			this->labelBushNoise->TabIndex = 11;
-			// 
 			// labelBushRelay
 			// 
 			this->labelBushRelay->BackColor = System::Drawing::SystemColors::Info;
-			this->labelBushRelay->Location = System::Drawing::Point( 319, 51 );
+			this->labelBushRelay->Location = System::Drawing::Point( 315, 78 );
 			this->labelBushRelay->Name = L"labelBushRelay";
 			this->labelBushRelay->Size = System::Drawing::Size( 85, 18 );
 			this->labelBushRelay->TabIndex = 10;
@@ -265,7 +257,7 @@ namespace BushWinApplication {
 			// labelBushSens
 			// 
 			this->labelBushSens->BackColor = System::Drawing::SystemColors::Info;
-			this->labelBushSens->Location = System::Drawing::Point( 319, 24 );
+			this->labelBushSens->Location = System::Drawing::Point( 315, 51 );
 			this->labelBushSens->Name = L"labelBushSens";
 			this->labelBushSens->Size = System::Drawing::Size( 85, 18 );
 			this->labelBushSens->TabIndex = 9;
@@ -291,22 +283,13 @@ namespace BushWinApplication {
 			this->labelBushConnect->BackColor = System::Drawing::SystemColors::Info;
 			this->labelBushConnect->Location = System::Drawing::Point( 113, 24 );
 			this->labelBushConnect->Name = L"labelBushConnect";
-			this->labelBushConnect->Size = System::Drawing::Size( 85, 18 );
+			this->labelBushConnect->Size = System::Drawing::Size( 287, 18 );
 			this->labelBushConnect->TabIndex = 6;
-			// 
-			// labelNameBushNoise
-			// 
-			this->labelNameBushNoise->AutoSize = true;
-			this->labelNameBushNoise->Location = System::Drawing::Point( 220, 79 );
-			this->labelNameBushNoise->Name = L"labelNameBushNoise";
-			this->labelNameBushNoise->Size = System::Drawing::Size( 68, 18 );
-			this->labelNameBushNoise->TabIndex = 5;
-			this->labelNameBushNoise->Text = L"ГШ/АСК:";
 			// 
 			// labelNameBushRelay
 			// 
 			this->labelNameBushRelay->AutoSize = true;
-			this->labelNameBushRelay->Location = System::Drawing::Point( 220, 51 );
+			this->labelNameBushRelay->Location = System::Drawing::Point( 216, 78 );
 			this->labelNameBushRelay->Name = L"labelNameBushRelay";
 			this->labelNameBushRelay->Size = System::Drawing::Size( 47, 18 );
 			this->labelNameBushRelay->TabIndex = 4;
@@ -315,7 +298,7 @@ namespace BushWinApplication {
 			// labelNameBushSens
 			// 
 			this->labelNameBushSens->AutoSize = true;
-			this->labelNameBushSens->Location = System::Drawing::Point( 220, 24 );
+			this->labelNameBushSens->Location = System::Drawing::Point( 216, 51 );
 			this->labelNameBushSens->Name = L"labelNameBushSens";
 			this->labelNameBushSens->Size = System::Drawing::Size( 102, 18 );
 			this->labelNameBushSens->TabIndex = 3;
