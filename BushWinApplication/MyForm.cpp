@@ -91,6 +91,7 @@ Int32 BushWinApplication::MyForm::OnTimerUpdate()
 		{
 			labelBushDoor->Text = ( bushState.info[INFO_BYTE_BITS::DOOR]==0 ) ? L"Открыта" : L"Закрыта";
 			labelBushLock->Text = ( bushState.info[INFO_BYTE_BITS::LOCK]==0 ) ? L"Открыт" : L"Закрыт";
+			labelBushSens->Text = bushState.averageTemp.ToString();
 			labelBushRelay->Text = ( bushState.info[INFO_BYTE_BITS::RELAY]==0 ) ? L"Выключено" : L"Включено";			
 		}
 

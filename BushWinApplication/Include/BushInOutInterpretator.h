@@ -3,7 +3,7 @@
 #include "BushData.h"
 
 const WORD M_WAIT_TIME_DEFAULT = 1000;
-const WORD M_WAIT_TIME_UPDATE = 10000;
+const WORD M_WAIT_TIME_UPDATE = 5000;
 
 class BushInOutInterpretator : public SerialPortBush
 {
@@ -57,8 +57,8 @@ private:
 	DWORD fnDefaultWait();
 	DWORD fnConnectCheck();
 	DWORD fnAskStateInit();
-
 	DWORD fnAskState();
+	DWORD fnGetHeatSens();
 
 	DWORD fnInputBushHandle();
 	DWORD fnTimerWaitHandle();

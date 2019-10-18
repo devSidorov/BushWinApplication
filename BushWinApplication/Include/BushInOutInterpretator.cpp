@@ -59,6 +59,17 @@ DWORD BushInOutInterpretator::fnAskState()
 	return ERROR_SUCCESS;
 }
 
+DWORD BushInOutInterpretator::fnGetHeatSens()
+{
+	m_script = BUSH_SCRIPT::GET_TEMPRETURE;
+	Write( OPCODE::TEMP_GET, INFO_BYTE::TEMP_AVERAGE );
+	m_waitForOpcode = OPCODE::TEMP_SENS_AVERAGE;
+	m_dwWaitTime = M_WAIT_TIME_DEFAULT;
+	m_bRepeatErr = FALSE;
+
+	return ERROR_SUCCESS;
+}
+
 
 BOOL BushInOutInterpretator::fnWaitForNextIO()
 {
@@ -111,10 +122,7 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 			if ( m_waitForOpcode == OPCODE::CONNECT_FINE )
 				fnAskStateInit();
 			else if ( m_waitForOpcode == OPCODE::STATE_INFO )
-			{
-				m_pDataITC->SetData( bushState, bushStatus );
-				fnDefaultWait();
-			}			
+				fnGetHeatSens(); // get temp sensor before sending info to Getter				
 			else 
 				System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Must not be here script -{0:X}", ( DWORD )m_script ) );
 			break;
@@ -125,6 +133,8 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 		case BUSH_SCRIPT::RELAY_UNLOCK:
 			break;
 		case BUSH_SCRIPT::GET_TEMPRETURE:
+			m_pDataITC->SetData( bushState, bushStatus ); //TODO add temp check to set status overheat
+			fnDefaultWait();
 			break;		
 		default:
 			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Check, no processing for this script name!" ) );
@@ -132,11 +142,17 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 	}
 	else
 	{
-		// if no wait its free state, and bush can give new status, if waiting for opcode only data must change
-		if ( m_waitForOpcode )
+		if ( returnedOpcode == OPCODE::ALERT_BISH_BRISH ||
+			 returnedOpcode == OPCODE::ALERT_TEMP_SENS ||
+			 returnedOpcode == OPCODE::ALERT_TEMP_OVERHEAT )
+			//status changed in data parsing
+			m_pDataITC->SetData( bushStatus );
+		else if ( returnedOpcode == OPCODE::STATE_CHANGE )
 			m_pDataITC->SetData( bushState );
+		else if ( m_waitForOpcode )
+			; //waiting for another opcode, do nothing and wait for opcode or timer to send repeat of command 
 		else
-			m_pDataITC->SetData( bushState, bushStatus );
+			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Check, no processing for this opcode, not equal with waitopcode!" ) );
 	}
 	
 	return ERROR_SUCCESS;
@@ -160,7 +176,7 @@ DWORD BushInOutInterpretator::fnTimerWaitHandle()
 				fnConnectCheck();
 		}
 		else
-			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Must not be here script -{0:X}", ( DWORD )m_script ) );
+			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Timeout processing, init script -{0:X}", ( DWORD )m_script ) );
 		break;
 	case BUSH_SCRIPT::LOCK_LOCK:
 	case BUSH_SCRIPT::LOCK_UNLOCK:
@@ -169,6 +185,15 @@ DWORD BushInOutInterpretator::fnTimerWaitHandle()
 	case BUSH_SCRIPT::RELAY_UNLOCK:
 		break;
 	case BUSH_SCRIPT::GET_TEMPRETURE:
+		if ( m_waitForOpcode == OPCODE::TEMP_SENS_AVERAGE )
+		{
+		if ( m_bRepeatErr )
+			m_bRepeatErr = TRUE;
+		else
+			fnConnectCheck();
+		}
+		else
+		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Timeout processing, temp script,  -{0:X}", ( DWORD )m_script ) );
 		break;
 	default:
 		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Check, no processing for this script name!" ) );
