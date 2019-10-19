@@ -35,7 +35,8 @@ DWORD BushInOutInterpretator::fnConnectCheck()
 	m_pDataITC->SetData( BUSH_STATUS::DISCONNECTED );
 	m_script = BUSH_SCRIPT::INIT;
 	m_waitForOpcode = OPCODE::CONNECT_FINE;
-	m_dwWaitTime = M_WAIT_TIME_DEFAULT;	
+	m_dwWaitTime = M_WAIT_TIME_DEFAULT;
+	m_bRepeatErr = FALSE;
 
 	return ERROR_SUCCESS;
 }
@@ -202,72 +203,34 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 
 DWORD BushInOutInterpretator::fnTimerWaitHandle()
 {
-	switch ( m_script )
-	{
-	case BUSH_SCRIPT::NO_SCRIPT:
+	if ( m_waitForOpcode == OPCODE::NOT_VALUE )
 		fnAskState();
-		break;
-	case BUSH_SCRIPT::INIT:
-		if ( m_waitForOpcode == OPCODE::CONNECT_FINE )
-			fnConnectCheck();
-		else if ( m_waitForOpcode == OPCODE::STATE_INFO )
+	else if ( m_waitForOpcode == OPCODE::CONNECT_FINE )
+		fnConnectCheck();
+	else
+	{
+		if ( !m_bRepeatErr )
 		{
-			if ( !m_bRepeatErr )
+			switch ( m_waitForOpcode )
 			{
+			case OPCODE::STATE_INFO:
 				fnAskStateInit();
-				m_bRepeatErr = TRUE;
-			}
-			else
-				fnConnectCheck();
-		}
-		else
-			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Timeout processing, init script -{0:X}", ( DWORD )m_script ) );
-		break;
-	case BUSH_SCRIPT::LOCK_LOCK:
-	case BUSH_SCRIPT::LOCK_UNLOCK:
-	case BUSH_SCRIPT::RELAY_ON:
-	case BUSH_SCRIPT::RELAY_OFF:
-		if ( m_waitForOpcode == OPCODE::STATE_INFO )
-		{
-			if ( !m_bRepeatErr )
-			{
-				fnAskStateInit();
-				m_bRepeatErr = TRUE;
-			}
-			else
-				fnConnectCheck();
-		}
-		else if ( m_waitForOpcode == OPCODE::STATE_CHANGE ) 
-		{
-			if ( !m_bRepeatErr )
-			{
+				break;
+			case OPCODE::STATE_CHANGE:
 				fnLockRelayScript( SCRIPT_STEP::SECOND_STEP );
-				m_bRepeatErr = TRUE;
-			}
-			else
-				fnConnectCheck();
-		}
-		else
-			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Timeout processing, lock-relay script -{0:X}", ( DWORD )m_script ) );
-		break;
-	case BUSH_SCRIPT::GET_TEMPRETURE:
-		if ( m_waitForOpcode == OPCODE::TEMP_SENS_AVERAGE )
-		{
-			if ( !m_bRepeatErr )
-			{
+				break;
+			case OPCODE::TEMP_SENS_AVERAGE:
 				fnGetHeatSens();
-				m_bRepeatErr = TRUE;
-			}
-			else
-				fnConnectCheck();
+				break;
+			default:
+				System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Timeout processing, unwaited opcode -{0:X}", ( DWORD )m_waitForOpcode ) );
+			}			
+			m_bRepeatErr = TRUE;
 		}
 		else
-			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Timeout processing, temp script,  -{0:X}", ( DWORD )m_script ) );
-		break;
-	default:
-		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Check, no processing for this script name!" ) );
+			fnConnectCheck();
 	}
-
+	
 	return ERROR_SUCCESS;
 }
 
