@@ -5,6 +5,13 @@
 const WORD M_WAIT_TIME_DEFAULT = 1000;
 const WORD M_WAIT_TIME_UPDATE = 5000;
 
+enum SCRIPT_STEP
+{
+	FIRST_STEP,
+	SECOND_STEP,
+	THIRD_STEP
+};
+
 class BushInOutInterpretator : public SerialPortBush
 {
 private:
@@ -14,12 +21,12 @@ private:
 		EV_COUNT
 	};
 		
-	BushData* m_pDataITC;
+	BushData* m_pDataITC;// pointer to class with inter-thread communication
 	HANDLE m_haEvHandler[EV_COUNT];
-	BYTE m_waitForOpcode;
-	BUSH_SCRIPT m_script;
-	DWORD m_dwWaitTime;
-	BOOL m_bRepeatErr;
+	BUSH_SCRIPT m_script;// stores name of operation
+	BYTE m_waitForOpcode;// stores current wait for operation, need in timeout error processing
+	DWORD m_dwWaitTime;// timer before timeout error start processing
+	BOOL m_bRepeatErr;// flag of repeatable timeout error
 
 	
 
@@ -59,6 +66,7 @@ private:
 	DWORD fnAskStateInit();
 	DWORD fnAskState();
 	DWORD fnGetHeatSens();
+	DWORD fnLockRelayScript( SCRIPT_STEP wStep, BOOL bOnMech, BOOL bIsLockScript );
 
 	DWORD fnInputBushHandle();
 	DWORD fnTimerWaitHandle();

@@ -70,6 +70,41 @@ DWORD BushInOutInterpretator::fnGetHeatSens()
 	return ERROR_SUCCESS;
 }
 
+// Script for change state lock and relay from bush documentationn
+// parameters bOnMech and bIsLockScript play role only in first step, after function works with class member m_script
+DWORD BushInOutInterpretator::fnLockRelayScript( SCRIPT_STEP wStep = SCRIPT_STEP::FIRST_STEP, BOOL bOnMech = TRUE, BOOL bIsLockScript = TRUE )
+{
+	if ( wStep == SCRIPT_STEP::FIRST_STEP )
+	{
+		if ( bIsLockScript )
+			m_script = ( bOnMech ) ? BUSH_SCRIPT::LOCK_LOCK : BUSH_SCRIPT::LOCK_UNLOCK;
+		else
+			m_script = ( bOnMech ) ? BUSH_SCRIPT::RELAY_ON : BUSH_SCRIPT::RELAY_OFF;
+		fnAskStateInit();
+	}
+	else if ( wStep == SCRIPT_STEP::SECOND_STEP )
+	{
+		Write( ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::LOCK_UNLOCK ) ? OPCODE::LOCK_CHANGE : OPCODE::RELAY_CHANGE,
+			   ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::RELAY_ON ) ? INFO_BYTE::ON : INFO_BYTE::OFF );
+		m_waitForOpcode == OPCODE::STATE_CHANGE;
+		m_bRepeatErr = FALSE;
+	}
+	else if ( wStep == SCRIPT_STEP::THIRD_STEP )
+	{
+		if ( bushState.info[ ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::LOCK_UNLOCK ) ? INFO_BYTE_BITS::LOCK : INFO_BYTE_BITS::RELAY ] 
+			 == ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::RELAY_ON ) ? 1 : 0 ) //check if state is changed as script asked
+		{
+			m_pDataITC->SetData( bushState, bushStatus );
+			fnDefaultWait();
+		}
+		else; //waiting for another opcode, do nothing and wait for opcode or timer to send repeat of command
+	}
+	else
+		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Script lock-relay, unknown step -{0:X}", ( DWORD )wStep ) );
+
+	return ERROR_SUCCESS;
+}
+
 
 BOOL BushInOutInterpretator::fnWaitForNextIO()
 {
@@ -99,6 +134,7 @@ BOOL BushInOutInterpretator::fnWaitForNextIO()
 	case ( WAIT_ABANDONED_0 + EVENT_ARR::BUSH_INPUT ):	
 	case WAIT_FAILED:
 	default:
+		//TODO add processing of unpredicted events with threads
 		TerminateThread( m_haEvHandler[EVENT_ARR::BUSH_INPUT], NULL );
 		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Wait for events returned {0:X} error {0:X}", fSuccess, GetLastError() ) );
 	}
@@ -113,10 +149,11 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 
 	if ( returnedOpcode == m_waitForOpcode )
 	{
+		// Processing right returned opcode 
 		switch ( m_script )
 		{
 		case BUSH_SCRIPT::NO_SCRIPT:
-			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! If its no script read must not be here" ) );
+			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Input processing, no script, returned opcode -{0:X}", returnedOpcode ) );
 			break;
 		case BUSH_SCRIPT::INIT:
 			if ( m_waitForOpcode == OPCODE::CONNECT_FINE )
@@ -128,9 +165,14 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 			break;
 		case BUSH_SCRIPT::LOCK_LOCK:
 		case BUSH_SCRIPT::LOCK_UNLOCK:
-			break;
-		case BUSH_SCRIPT::RELAY_LOCK:
-		case BUSH_SCRIPT::RELAY_UNLOCK:
+		case BUSH_SCRIPT::RELAY_ON:
+		case BUSH_SCRIPT::RELAY_OFF:
+			if ( m_waitForOpcode == OPCODE::STATE_INFO )
+				fnLockRelayScript( SCRIPT_STEP::SECOND_STEP );
+			else if ( m_waitForOpcode == OPCODE::STATE_CHANGE )
+				fnLockRelayScript( SCRIPT_STEP::SECOND_STEP );
+			else 
+				System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Input processing, LOCK/UNLOKC script, unwaited OPCODE {0:X}", returnedOpcode ) );
 			break;
 		case BUSH_SCRIPT::GET_TEMPRETURE:
 			m_pDataITC->SetData( bushState, bushStatus ); //TODO add temp check to set status overheat
@@ -152,7 +194,7 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 		else if ( m_waitForOpcode )
 			; //waiting for another opcode, do nothing and wait for opcode or timer to send repeat of command 
 		else
-			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Check, no processing for this opcode, not equal with waitopcode!" ) );
+			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Input processing, no wait for opcode, not predicted opcode {0:X}", returnedOpcode ) );
 	}
 	
 	return ERROR_SUCCESS;
@@ -170,8 +212,11 @@ DWORD BushInOutInterpretator::fnTimerWaitHandle()
 			fnConnectCheck();
 		else if ( m_waitForOpcode == OPCODE::STATE_INFO )
 		{
-			if ( m_bRepeatErr )
+			if ( !m_bRepeatErr )
+			{
+				fnAskStateInit();
 				m_bRepeatErr = TRUE;
+			}
 			else
 				fnConnectCheck();
 		}
@@ -180,20 +225,44 @@ DWORD BushInOutInterpretator::fnTimerWaitHandle()
 		break;
 	case BUSH_SCRIPT::LOCK_LOCK:
 	case BUSH_SCRIPT::LOCK_UNLOCK:
-		break;
-	case BUSH_SCRIPT::RELAY_LOCK:
-	case BUSH_SCRIPT::RELAY_UNLOCK:
+	case BUSH_SCRIPT::RELAY_ON:
+	case BUSH_SCRIPT::RELAY_OFF:
+		if ( m_waitForOpcode == OPCODE::STATE_INFO )
+		{
+			if ( !m_bRepeatErr )
+			{
+				fnAskStateInit();
+				m_bRepeatErr = TRUE;
+			}
+			else
+				fnConnectCheck();
+		}
+		else if ( m_waitForOpcode == OPCODE::STATE_CHANGE ) 
+		{
+			if ( !m_bRepeatErr )
+			{
+				fnLockRelayScript( SCRIPT_STEP::SECOND_STEP );
+				m_bRepeatErr = TRUE;
+			}
+			else
+				fnConnectCheck();
+		}
+		else
+			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Timeout processing, lock-relay script -{0:X}", ( DWORD )m_script ) );
 		break;
 	case BUSH_SCRIPT::GET_TEMPRETURE:
 		if ( m_waitForOpcode == OPCODE::TEMP_SENS_AVERAGE )
 		{
-		if ( m_bRepeatErr )
-			m_bRepeatErr = TRUE;
-		else
-			fnConnectCheck();
+			if ( !m_bRepeatErr )
+			{
+				fnGetHeatSens();
+				m_bRepeatErr = TRUE;
+			}
+			else
+				fnConnectCheck();
 		}
 		else
-		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Timeout processing, temp script,  -{0:X}", ( DWORD )m_script ) );
+			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Timeout processing, temp script,  -{0:X}", ( DWORD )m_script ) );
 		break;
 	default:
 		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Check, no processing for this script name!" ) );

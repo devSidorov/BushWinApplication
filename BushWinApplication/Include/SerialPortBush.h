@@ -45,8 +45,8 @@ enum INFO_BYTE {
 	TEMP_SECOND,
 	TEMP_THIRD,
 	TEMP_FOURTH,
-	ON = 0x00,
-	OFF = 0xFF
+	OFF = 0x00,
+	ON = 0xFF
 };
 
 enum INFO_BYTE_BITS {
@@ -65,10 +65,10 @@ enum BUSH_SCRIPT
 {
 	NO_SCRIPT,
 	INIT,
-	LOCK_LOCK,
+	LOCK_LOCK, // this and LOCK_UNLOCK must be on next to another
 	LOCK_UNLOCK,
-	RELAY_LOCK,
-	RELAY_UNLOCK,
+	RELAY_ON, // this and RELAY_OFF must be on next to another
+	RELAY_OFF,
 	GET_TEMPRETURE,
 	DISCONNECT //TODO delete if dont need
 };
