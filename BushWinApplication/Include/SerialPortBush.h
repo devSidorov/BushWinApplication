@@ -4,7 +4,15 @@
 #include <tchar.h>
 #include <stdio.h>
 #include <iostream>
-#include "BushData.h"
+
+enum BUSH_STATUS {
+	NO_STATUS,
+	DISCONNECTED,
+	CONNECTED = 0x84, //similar to bush Opcode
+	HEAT_SENS_ERR = 0xA1,
+	BUSH_BRISH_ERR,
+	OVERHEATED
+};
 
 enum OPCODE {
 	NOT_VALUE,
@@ -37,18 +45,54 @@ enum INFO_BYTE {
 	TEMP_SECOND,
 	TEMP_THIRD,
 	TEMP_FOURTH,
-	ON = 0x00,
-	OFF = 0xFF
+	OFF = 0x00,
+	ON = 0xFF
 };
 
-enum {
+enum INFO_BYTE_BITS {
+	DOOR,
+	LOCK,
+	OVERHEAT,
+	RELAY,
+	NOISE,
+	RES1,
+	RES2,
+	RES3,
+	BIT_COUNT
+};
+
+enum BUSH_SCRIPT
+{
+	NO_SCRIPT,
+	INIT,
+	LOCK_LOCK, // this and LOCK_UNLOCK must be on next to another
+	LOCK_UNLOCK,
+	RELAY_ON, // this and RELAY_OFF must be on next to another
+	RELAY_OFF,
+	GET_TEMPRETURE,
+	DISCONNECT //TODO delete if dont need
+};
+
+typedef struct {
+	// info state:	
+	BOOLEAN info[INFO_BYTE_BITS::BIT_COUNT];
+	// temp sensors:
+	INT8 averageTemp;
+	INT8 firstTempSens;
+	INT8 secondTempSens;
+	INT8 thirdTempSens;
+	INT8 fourthTempSens;
+
+} DATABUSH, *LPDATABUSH;
+
+enum INPUT_PACKET{
 	FIRST_BYTE,
 	OPCODE_BYTE,
 	INFO_BYTE,
-	CACHE_BYTE
+	CACHE_BYTE,
+	COUNT_BYTE
 };
-const BYTE firstByte = 0xAA;
-const BYTE BYTES_IO = 4;
+const BYTE FIRST_BYTE_VALUE = 0xAA;
 const BYTE INFO_BYTES = 2;
 
 class SerialPortBush
@@ -84,7 +128,7 @@ public:
 private:
 	DWORD ConnectPort();
 	DWORD ConfigPort();
-	BYTE ReadPort( BYTE& opcodeByte, BYTE& infoByte, BOOL firstRead = TRUE );
+	DWORD ReadPort( BYTE& opcodeByte, BYTE& infoByte, BOOL firstRead = TRUE );
 	DWORD WritePort( const BYTE opcodeByte, const BYTE infoByte );
 
 	DWORD ParseInput( BYTE opcodeByte, BYTE infoByte );
@@ -95,8 +139,7 @@ private:
 
 public:
 	DWORD Open();
-	DWORD Read();
-	DWORD Read( BYTE checkOpcode );
+	DWORD Read( DWORD& opcodeReaden );
 	
 	BUSH_STATUS GetStatus() {
 		return bushStatus;

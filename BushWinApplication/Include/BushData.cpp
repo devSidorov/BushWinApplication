@@ -57,6 +57,7 @@ DWORD const BushData::GetData( DATABUSH& dataReturn, BUSH_STATUS& statusReturn )
 	System::Diagnostics::Debug::Assert( fSuccess == WAIT_OBJECT_0 || fSuccess == WAIT_ABANDONED, System::String::Format( "ERROR! Mutex wait wrong return! {0:X}", fSuccess ) );
 
 	dataReturn = bushState;
+	statusReturn = status;
 	ResetEvent( hInfoChanged );
 
 	ReleaseMutex( hInfoMutex );

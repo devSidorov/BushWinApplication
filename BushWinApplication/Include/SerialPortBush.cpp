@@ -39,58 +39,73 @@ DWORD SerialPortBush::ConfigPort()
 	if ( !fSuccess )
 		return ERROR_PORT_NOT_SET;
 
-	fSuccess = PurgeComm( hCom, PURGE_RXABORT | PURGE_RXCLEAR | PURGE_TXABORT | PURGE_TXCLEAR ); // clear buffer
-	System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Clearing buffer port! {0:X}", GetLastError() ) );
+	//fSuccess = PurgeComm( hCom, PURGE_RXABORT | PURGE_RXCLEAR | PURGE_TXABORT | PURGE_TXCLEAR ); // clear buffer
+	//System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Clearing buffer port! {0:X}", GetLastError() ) );
 
 	return ERROR_SUCCESS;
 }
 
 //Read input buffer, dont log firstbyte error because its signal of clean buffer
-BYTE SerialPortBush::ReadPort( BYTE& opcodeByte, BYTE& infoByte ,BOOL firstRead )
+DWORD SerialPortBush::ReadPort( BYTE& opcodeByte, BYTE& infoByte ,BOOL firstRead )
 {
-	BYTE bufferRead[BYTES_IO] = { 0,0,0,0 };
+	BYTE bufferRead[COUNT_BYTE] = { 0,0,0,0 };
 	DWORD bytesIOoperated;
 	
-	DWORD fSuccess = ReadFile( hCom,
-							   bufferRead,
-							   BYTES_IO,
-							   &bytesIOoperated,
-							   NULL );
-	
-	//TODO change result processing
-	if ( fSuccess )
+	for ( INT8 inc = 0; inc <= CACHE_BYTE; inc++ )
 	{
-		if ( bufferRead[FIRST_BYTE] != firstByte )
+		DWORD fSuccess = ReadFile( hCom,
+								   bufferRead + inc,
+								   1,
+								   &bytesIOoperated,
+								   NULL );
+		//check input bytes
+		if ( fSuccess )
 		{
-			System::Diagnostics::Debug::Assert( !firstRead, "ERROR! First byte wrong from bush" ); //TODO normal error handling				
-		}			
-		else if ( bufferRead[CACHE_BYTE] != dallas_crc8( bufferRead + 1, INFO_BYTES ) )
-			System::Diagnostics::Debug::Assert( FALSE, "ERROR! Cache byte wrong from bush" ); //TODO normal error handling
+			switch ( inc )
+			{
+			case FIRST_BYTE:
+				if ( bufferRead[inc] != FIRST_BYTE_VALUE )
+					return ERROR_DATA_NOT_ACCEPTED;
+				break;
+			case OPCODE_BYTE:
+				if ( !bufferRead[inc] )
+					return ERROR_DATA_NOT_ACCEPTED;
+				break;
+			case INFO_BYTE:
+				break;
+			case CACHE_BYTE:
+				if ( bufferRead[CACHE_BYTE] != dallas_crc8( bufferRead + 1, INFO_BYTES ) )
+					return ERROR_DATA_NOT_ACCEPTED;
+				else
+				{
+					opcodeByte = bufferRead[OPCODE_BYTE];
+					infoByte = bufferRead[INFO_BYTE];
+				}
+				break;
+			default:
+				System::Diagnostics::Debug::Assert( TRUE, "ERROR! Read from port byte ckeck mustnot be here" );
+				return ERROR_UNIDENTIFIED_ERROR;
+			}
+		}
 		else
 		{
-			opcodeByte = bufferRead[OPCODE_BYTE];
-			infoByte = bufferRead[INFO_BYTE];			
+			System::Diagnostics::Debug::Assert( TRUE, "ERROR! Read from port failed" ); //TODO normal error handling
+			return ERROR_PORT_UNREACHABLE;;
 		}
-			
-	}
-	else
-	{
-		System::Diagnostics::Debug::Assert( TRUE, "ERROR! Read from port failed" ); //TODO normal error handling
-	}
-	
-	return bufferRead[FIRST_BYTE];
+	}		
+	return ERROR_SUCCESS;
 }
 
 DWORD SerialPortBush::WritePort( BYTE opcodeByte, BYTE infoByte )
 {
-	BYTE bufferWrite[BYTES_IO] = { firstByte, opcodeByte, infoByte, 0 };
+	BYTE bufferWrite[COUNT_BYTE] = { FIRST_BYTE_VALUE, opcodeByte, infoByte, 0 };
 	DWORD bytesIOoperated;
 	
 	bufferWrite[3] = dallas_crc8( bufferWrite + 1, INFO_BYTES );
 
 	DWORD fSuccess = WriteFile( hCom,
 								bufferWrite,
-								BYTES_IO,
+								COUNT_BYTE,
 								&bytesIOoperated,
 								NULL );
 	
@@ -109,42 +124,28 @@ DWORD SerialPortBush::Open()
 }
 
 //reads input and parses result into data struct and status value
-DWORD SerialPortBush::Read()
+DWORD SerialPortBush::Read( DWORD& opcodeReaden )
 {
 	BYTE opcodeByte = 0;
 	BYTE infoByte = 0;
+	DWORD fSuccess = 0;
+	DWORD evtMask = 0;
+
+	fSuccess = WaitCommEvent( hCom, &evtMask, NULL );
+	if ( !fSuccess )
+	{
+		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Wait for comm event fail! {0:X}", fSuccess = GetLastError() ) );
+		return fSuccess;
+	}
+
+	fSuccess = ReadPort( opcodeByte, infoByte );
+	if ( !fSuccess )
+	{
+		ParseInput( opcodeByte, infoByte );
+		opcodeReaden = opcodeByte;
+	}		
 	
-	//one or more read to clean input buffer
-	BYTE result = ReadPort( opcodeByte, infoByte );	
-	while ( result )
-	{
-		ParseInput( opcodeByte, infoByte );
-		result = ReadPort( opcodeByte, infoByte, FALSE );
-	}
-		
-	return 0;
-}
-
-
-//reads input and parses result into data struct and status value
-//return TRUE is chekable opcode was in input
-DWORD SerialPortBush::Read( BYTE checkOpcode )
-{
-	BOOL bWasOpcodeReaden = FALSE;
-	BYTE opcodeByte = 0;
-	BYTE infoByte = 0;
-
-	//one or more read to clean input buffer
-	ReadPort( opcodeByte, infoByte );	
-	while ( opcodeByte )
-	{
-		if ( opcodeByte == checkOpcode )
-			bWasOpcodeReaden = TRUE;
-		ParseInput( opcodeByte, infoByte );
-		ReadPort( opcodeByte, infoByte, FALSE );
-	}
-
-	return bWasOpcodeReaden;
+	return fSuccess;
 }
 
 DWORD SerialPortBush::ParseStateByte( BYTE infoByte )
@@ -212,6 +213,8 @@ DWORD SerialPortBush::ParseInput( BYTE opcodeByte, BYTE infoByte )
 	case OPCODE::ALERT_TEMP_OVERHEAT:		
 		bushStatus = BUSH_STATUS::OVERHEATED;
 		System::Diagnostics::Debug::Assert( !infoByte, System::String::Format( "ERROR! Wrong info opcode from bush! {0:X}", infoByte ) );
+		break;
+	case OPCODE::NOT_VALUE:
 		break;
 	default:
 		//TODO add throw to place where will be state change

@@ -18,23 +18,6 @@ void Main( array<String^>^ args ) {
 	Application::Run( %form );
 }
 
-typedef struct InThreadData
-{
-	const TCHAR* pPortName;
-	BushData* pBushData;
-} INTHREADDATA, *LPINTHREADDATA;
-
-DWORD WINAPI MainIOBushThread( LPVOID lpParam )
-{
-	BushInOutInterpretator BushConnect( ( ( LPINTHREADDATA )lpParam )->pBushData, ( ( LPINTHREADDATA )lpParam )->pPortName );
-	BushConnect.Start();
-
-	while ( BushConnect.WaitForNextIO() );
-
-	BushConnect.Finish();
-	return ERROR_SUCCESS;
-}
-
 Int32 BushWinApplication::MyForm::BushIOThreadStart( String^ pPortName )
 {
 	INTHREADDATA dataToThread;
@@ -43,7 +26,7 @@ Int32 BushWinApplication::MyForm::BushIOThreadStart( String^ pPortName )
 	dataToThread.pPortName = context.marshal_as<const TCHAR*>( pPortName );
 	dataToThread.pBushData = &ITCdataBush;
 	
-	hIObushThread = CreateThread( nullptr, NULL, MainIOBushThread, &dataToThread, NULL, nullptr );
+	hIObushThread = CreateThread( nullptr, NULL, fnMainIOBushThread, &dataToThread, NULL, nullptr );
 	System::Diagnostics::Debug::Assert( hIObushThread, "ERROR! IO thread hasn't started" ); //TODO add error check
 
 	timerCheckData->Enabled = TRUE;
@@ -56,6 +39,43 @@ Void BushWinApplication::MyForm::FormGuiEnable( bool isTRUE )
 	comBoxPortNames->Enabled = isTRUE;
 }
 
+Void BushWinApplication::MyForm::InfoLabelsReset()
+{
+	labelBushConnect->Text = L"";
+	labelBushDoor->Text = L"";
+	labelBushLock->Text = L"";
+	labelBushSens->Text = L"";
+	labelBushRelay->Text = L"";	
+}
+
+Void BushWinApplication::MyForm::StatusLabelUpdate( const Int32& bushStatus )
+{
+	switch ( bushStatus )
+	{		
+	case BUSH_STATUS::NO_STATUS:
+		labelBushConnect->Text = L"Выберите порт!";
+		break;
+	case BUSH_STATUS::DISCONNECTED:
+		labelBushConnect->Text = L"Не подкючен! Ожидание ответа...";
+		break;
+	case BUSH_STATUS::CONNECTED:
+		labelBushConnect->Text = L"Подключен";
+		break;
+	case BUSH_STATUS::HEAT_SENS_ERR:
+		labelBushConnect->Text = L"Ошибка датчика температуры!";
+		break;
+	case BUSH_STATUS::BUSH_BRISH_ERR:
+		labelBushConnect->Text = L"Ошибка БУШ/БРИШ!";
+		break;
+	case BUSH_STATUS::OVERHEATED:
+		labelBushConnect->Text = L"Превышена критическая температура!";
+		break;
+	default:
+		System::Diagnostics::Debug::Assert( hIObushThread, "ERROR! No such bish status" );
+		break;
+	};
+}
+
 Int32 BushWinApplication::MyForm::OnTimerUpdate()
 {
 	BUSH_STATUS bushStatus;
@@ -65,8 +85,16 @@ Int32 BushWinApplication::MyForm::OnTimerUpdate()
 	if ( ITCdataBush.IsDataChanged() )
 	{
 		ITCdataBush.GetData( bushState, bushStatus );
-		labelBushDoor->Text = ( bushState.info[INFO_BYTE_BITS::DOOR] == 0 ) ? L"Закрыта" : L"Открыта";
-		labelBushLock->Text = ( bushState.info[INFO_BYTE_BITS::LOCK] == 0 ) ? L"Закрыт" : L"Открыт";
+		InfoLabelsReset();
+		StatusLabelUpdate( bushStatus );
+		if ( bushStatus != NO_STATUS && bushStatus != DISCONNECTED )
+		{
+			labelBushDoor->Text = ( bushState.info[INFO_BYTE_BITS::DOOR]==0 ) ? L"Открыта" : L"Закрыта";
+			labelBushLock->Text = ( bushState.info[INFO_BYTE_BITS::LOCK]==0 ) ? L"Открыт" : L"Закрыт";
+			labelBushSens->Text = bushState.averageTemp.ToString();
+			labelBushRelay->Text = ( bushState.info[INFO_BYTE_BITS::RELAY]==0 ) ? L"Выключено" : L"Включено";			
+		}
+
 
 	}
 
