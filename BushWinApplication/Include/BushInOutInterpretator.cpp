@@ -87,7 +87,7 @@ DWORD BushInOutInterpretator::fnLockRelayScript( SCRIPT_STEP wStep = SCRIPT_STEP
 	{
 		Write( ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::LOCK_UNLOCK ) ? OPCODE::LOCK_CHANGE : OPCODE::RELAY_CHANGE,
 			   ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::RELAY_ON ) ? INFO_BYTE::ON : INFO_BYTE::OFF );
-		m_waitForOpcode == OPCODE::STATE_CHANGE;
+		m_waitForOpcode = OPCODE::STATE_CHANGE;
 		m_bRepeatErr = FALSE;
 	}
 	else if ( wStep == SCRIPT_STEP::THIRD_STEP )
@@ -111,10 +111,6 @@ BOOL BushInOutInterpretator::fnWaitForNextIO()
 {
 	BOOL IsCommandNotDissconnect = TRUE;
 
-	m_haEvHandler[EVENT_ARR::BUSH_INPUT] = CreateThread( NULL, 0, fnFromBushThread, this, 0, NULL ); //TODO dont reCreate a thread add a thread where last info will be rewritten
-	System::Diagnostics::Debug::Assert( m_haEvHandler[EVENT_ARR::BUSH_INPUT], "ERROR! Starting wait from bush thread!" );
-	
-	//TODO add state check timer
 	DWORD fSuccess = WaitForMultipleObjects( EV_COUNT,
 											 m_haEvHandler,
 											 FALSE,
@@ -122,13 +118,11 @@ BOOL BushInOutInterpretator::fnWaitForNextIO()
 	switch ( fSuccess )
 	{
 	case WAIT_OBJECT_0: //CommandEvent
-		TerminateThread( m_haEvHandler[EVENT_ARR::BUSH_INPUT], NULL );
 		break;
 	case ( WAIT_OBJECT_0 + EVENT_ARR::BUSH_INPUT ): //Something from Bush
 		fnInputBushHandle();
 		break;
 	case WAIT_TIMEOUT:
-		TerminateThread( m_haEvHandler[EVENT_ARR::BUSH_INPUT], NULL );
 		fnTimerWaitHandle();
 		break;
 	case WAIT_ABANDONED_0:
@@ -136,7 +130,6 @@ BOOL BushInOutInterpretator::fnWaitForNextIO()
 	case WAIT_FAILED:
 	default:
 		//TODO add processing of unpredicted events with threads
-		TerminateThread( m_haEvHandler[EVENT_ARR::BUSH_INPUT], NULL );
 		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Wait for events returned {0:X} error {0:X}", fSuccess, GetLastError() ) );
 	}
 
@@ -145,8 +138,7 @@ BOOL BushInOutInterpretator::fnWaitForNextIO()
 
 DWORD BushInOutInterpretator::fnInputBushHandle()
 {
-	DWORD returnedOpcode = 0;
-	GetExitCodeThread( m_haEvHandler[EVENT_ARR::BUSH_INPUT], &returnedOpcode );
+	DWORD returnedOpcode = ReadFromITData();
 
 	if ( returnedOpcode == m_waitForOpcode )
 	{
@@ -232,20 +224,6 @@ DWORD BushInOutInterpretator::fnTimerWaitHandle()
 	}
 	
 	return ERROR_SUCCESS;
-}
-
-DWORD WINAPI fnFromBushThread( LPVOID lpParam )
-{
-	
-	BushInOutInterpretator* pBush = ( BushInOutInterpretator* )lpParam;
-	DWORD fSuccess = ERROR_UNIDENTIFIED_ERROR;
-	DWORD opcodeReaden = OPCODE::NOT_VALUE;
-		
-	do	{
-		fSuccess = pBush->Read( opcodeReaden );
-	} while ( fSuccess );	
-		
-	return opcodeReaden;
 }
 
 DWORD WINAPI fnMainIOBushThread( LPVOID lpParam )

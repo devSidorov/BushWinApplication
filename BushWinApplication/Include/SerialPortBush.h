@@ -92,12 +92,27 @@ enum INPUT_PACKET{
 	CACHE_BYTE,
 	COUNT_BYTE
 };
+
+struct DATA_FROM_BUSH {
+	BYTE opcodeByte;
+	BYTE infoByte;
+};
+
 const BYTE FIRST_BYTE_VALUE = 0xAA;
 const BYTE INFO_BYTES = 2;
+const INT8 maxStack = 10;
 
 class SerialPortBush
 {
 private:
+	HANDLE m_hReadThreadHandle;
+	HANDLE m_hMutexReadData;
+	HANDLE m_hDataFromBush;
+	HANDLE m_hReadThreadStop; //TODO add flag pushing
+	DATA_FROM_BUSH m_aDataReadITC[maxStack]; // TODO rewrite class to protect this data
+	INT8 m_dCurrent;
+	INT8 m_dLastRead;
+
 protected:	
 	BUSH_STATUS bushStatus;
 	DATABUSH bushState;
@@ -105,14 +120,14 @@ protected:
 	HANDLE hCom;
 
 public:
-	DWORD SetPortName( const TCHAR* pcPortName ) {
-		if ( pcPortName )
-			return _tcscpy_s<MAX_PATH>( caPortName, pcPortName );
-		
-		return EINVAL;
-	}
-
 	SerialPortBush() {
+		m_hReadThreadHandle = nullptr;
+		m_hMutexReadData = CreateMutex( nullptr, FALSE, nullptr );
+		m_hDataFromBush = CreateEvent( nullptr, TRUE, FALSE, nullptr );
+		m_hReadThreadStop = CreateEvent( nullptr, TRUE, FALSE, nullptr );
+		SecureZeroMemory( m_aDataReadITC, sizeof( DATA_FROM_BUSH ) * maxStack );
+		m_dCurrent = m_dLastRead = -1;
+		
 		bushStatus = BUSH_STATUS::NO_STATUS;
 		SecureZeroMemory( &caPortName, sizeof( TCHAR ) * MAX_PATH );
 		SecureZeroMemory( &bushState, sizeof( DATABUSH ) );
@@ -126,21 +141,36 @@ public:
 	}
 
 private:
+	DWORD SetPortName( const TCHAR* pcPortName ) {
+		if ( pcPortName )
+			return _tcscpy_s<MAX_PATH>( caPortName, pcPortName );
+
+		return EINVAL;
+	}
+
 	DWORD ConnectPort();
 	DWORD ConfigPort();
-	DWORD ReadPort( BYTE& opcodeByte, BYTE& infoByte, BOOL firstRead = TRUE );
+	DWORD StartReadThread();
+	DWORD ReadPort( BYTE& opcodeByte, BYTE& infoByte );
 	DWORD WritePort( const BYTE opcodeByte, const BYTE infoByte );
+	
+	DWORD PutDataITC( const DATA_FROM_BUSH & dataToPut );
+	DWORD const GetDataITC( DATA_FROM_BUSH & dataGet );
 
 	DWORD ParseInput( BYTE opcodeByte, BYTE infoByte );
 	DWORD ParseStateByte( BYTE infoByte );
 	DWORD ParseChangeByte( BYTE infoByte );
 
+
 	BYTE dallas_crc8( const BYTE * dataCheck = NULL, UINT sizeData = 0 );
 
 public:
 	DWORD Open();
-	DWORD Read( DWORD& opcodeReaden );
+	DWORD Write( const BYTE opcodeByte, const BYTE infoByte );
 	
+	DWORD ReadToITData();
+	DWORD ReadFromITData();
+
 	BUSH_STATUS GetStatus() {
 		return bushStatus;
 	}
@@ -148,11 +178,16 @@ public:
 		return bushState;
 	}
 	
-	DWORD Write( const BYTE opcodeByte, const BYTE infoByte );
-		
-	HANDLE GetHandle() { 
-		return hCom; 
+	HANDLE const GetEventDataFromBush() {
+		return m_hDataFromBush;
 	}
-	
+	BOOL const fnIsReadThreadNeed()
+	{
+		if ( WaitForSingleObject( m_hReadThreadStop, NULL ) == WAIT_OBJECT_0 )
+			return FALSE;
+		return TRUE;
+	}	
 };
+
+DWORD WINAPI fnFromBushThread( LPVOID lpParam );
 

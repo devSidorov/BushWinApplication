@@ -46,6 +46,7 @@ public:
 		fnSecureClassMemory();
 		m_pDataITC = pDataToITC;
 		m_haEvHandler[EVENT_ARR::COMMAND] = m_pDataITC->GetCommandEvent();
+		m_haEvHandler[EVENT_ARR::BUSH_INPUT] = GetEventDataFromBush();
 	}
 	~BushInOutInterpretator() { 
 		for ( int i = 0; i < EV_COUNT; i++ )
@@ -73,12 +74,11 @@ private:
 };
 
 
-
-DWORD WINAPI fnFromBushThread( LPVOID lpParam );
+DWORD WINAPI fnMainIOBushThread( LPVOID lpParam );
 typedef struct InThreadData
 {
 	const TCHAR* pPortName;
 	BushData* pBushData;
 } INTHREADDATA, *LPINTHREADDATA;
 
-DWORD WINAPI fnMainIOBushThread( LPVOID lpParam );
+

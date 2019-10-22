@@ -1,8 +1,7 @@
 #include "SerialPortBush.h"
 
 DWORD SerialPortBush::ConnectPort()
-{
-	
+{	
 	if ( *caPortName )
 	{
 		hCom = CreateFile( caPortName,
@@ -13,7 +12,7 @@ DWORD SerialPortBush::ConnectPort()
 						   NULL,
 						   NULL ); // OPEN_EXISTING default 		
 	}
-	
+
 	return ( hCom != INVALID_HANDLE_VALUE )? ERROR_SUCCESS : ERROR_PORT_UNREACHABLE;
 }
 
@@ -33,24 +32,25 @@ DWORD SerialPortBush::ConfigPort()
 	if ( !fSuccess )
 		return ERROR_PORT_NOT_SET;
 	
-	//set event - first char from port
-	fSuccess = SetCommMask( hCom, EV_RXCHAR );
-	System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Setting mask config for port! {0:X}", GetLastError() ) );
-	if ( !fSuccess )
-		return ERROR_PORT_NOT_SET;
-
-	//fSuccess = PurgeComm( hCom, PURGE_RXABORT | PURGE_RXCLEAR | PURGE_TXABORT | PURGE_TXCLEAR ); // clear buffer
-	//System::Diagnostics::Debug::Assert( fSuccess, System::String::Format( "ERROR! Clearing buffer port! {0:X}", GetLastError() ) );
-
 	return ERROR_SUCCESS;
 }
 
+DWORD SerialPortBush::StartReadThread()
+{
+m_hReadThreadHandle = CreateThread( NULL, 0, fnFromBushThread, this, 0, NULL );
+System::Diagnostics::Debug::Assert( m_hReadThreadHandle, "ERROR! Readint thread start FAIL!" );
+
+return ERROR_SUCCESS;
+}
+
 //Read input buffer, dont log firstbyte error because its signal of clean buffer
-DWORD SerialPortBush::ReadPort( BYTE& opcodeByte, BYTE& infoByte ,BOOL firstRead )
+DWORD SerialPortBush::ReadPort( BYTE& opcodeByte, BYTE& infoByte )
 {
 	BYTE bufferRead[COUNT_BYTE] = { 0,0,0,0 };
 	DWORD bytesIOoperated;
 	
+	opcodeByte = infoByte = 0;
+
 	for ( INT8 inc = 0; inc <= CACHE_BYTE; inc++ )
 	{
 		DWORD fSuccess = ReadFile( hCom,
@@ -65,17 +65,25 @@ DWORD SerialPortBush::ReadPort( BYTE& opcodeByte, BYTE& infoByte ,BOOL firstRead
 			{
 			case FIRST_BYTE:
 				if ( bufferRead[inc] != FIRST_BYTE_VALUE )
+				{
 					return ERROR_DATA_NOT_ACCEPTED;
+				}					
 				break;
 			case OPCODE_BYTE:
 				if ( !bufferRead[inc] )
+				{
+					System::Diagnostics::Debug::WriteLine( System::String::Format( "Warning! Readen zero OPCODE byte from BUSH! {0:X}, {0:X}, {0:X} ,{0:X}", bufferRead[FIRST_BYTE], bufferRead[OPCODE_BYTE], bufferRead[INFO_BYTE], bufferRead[CACHE_BYTE] ) );
 					return ERROR_DATA_NOT_ACCEPTED;
+				}					
 				break;
 			case INFO_BYTE:
 				break;
 			case CACHE_BYTE:
 				if ( bufferRead[CACHE_BYTE] != dallas_crc8( bufferRead + 1, INFO_BYTES ) )
+				{
+					System::Diagnostics::Debug::WriteLine( System::String::Format( "Warning! Readen wrong CACHE byte from BUSH! {0:X}, {0:X}, {0:X} ,{0:X}", bufferRead[FIRST_BYTE], bufferRead[OPCODE_BYTE], bufferRead[INFO_BYTE], bufferRead[CACHE_BYTE] ) );
 					return ERROR_DATA_NOT_ACCEPTED;
+				}
 				else
 				{
 					opcodeByte = bufferRead[OPCODE_BYTE];
@@ -119,33 +127,73 @@ DWORD SerialPortBush::Open()
 	DWORD fSuccess = ConnectPort();
 	if ( !fSuccess )
 		fSuccess = ConfigPort();	
+	
+	StartReadThread();
 
 	return fSuccess;
 }
 
-//reads input and parses result into data struct and status value
-DWORD SerialPortBush::Read( DWORD& opcodeReaden )
+//reads input and put data in ITC storage if result is positive
+DWORD SerialPortBush::ReadToITData()
 {
-	BYTE opcodeByte = 0;
-	BYTE infoByte = 0;
+	DATA_FROM_BUSH dataReaden;
 	DWORD fSuccess = 0;
-	DWORD evtMask = 0;
-
-	fSuccess = WaitCommEvent( hCom, &evtMask, NULL );
+	
+	fSuccess = ReadPort( dataReaden.opcodeByte, dataReaden.infoByte );
 	if ( !fSuccess )
+		PutDataITC( dataReaden );
+			
+	return fSuccess;
+}
+
+// Get data from ITC storage and parse result to protected struct in this class, return readen opcode
+DWORD SerialPortBush::ReadFromITData()
+{
+	DATA_FROM_BUSH dataReaden;
+
+	SecureZeroMemory( &dataReaden, sizeof( DATA_FROM_BUSH ) );
+
+	GetDataITC( dataReaden );
+	ParseInput( dataReaden.opcodeByte, dataReaden.infoByte );
+	
+	return dataReaden.opcodeByte;
+}
+
+DWORD SerialPortBush::PutDataITC( const DATA_FROM_BUSH& dataToPut )
+{
+	DWORD fSuccess = WaitForSingleObject( m_hMutexReadData, INFINITE );
+	System::Diagnostics::Debug::Assert( fSuccess == WAIT_OBJECT_0 || fSuccess == WAIT_ABANDONED, System::String::Format( "ERROR! Mutex wait wrong return! {0:X}", fSuccess ) );
+
+	if ( ( m_dCurrent + 1 ) % maxStack != m_dLastRead ) //check if catching read index - rewrite last getten data
+		m_dCurrent = ( m_dCurrent + 1 ) % maxStack;
+		
+	m_aDataReadITC[m_dCurrent] = dataToPut;
+	
+	SetEvent( m_hDataFromBush );
+	ReleaseMutex( m_hMutexReadData );
+
+	return ERROR_SUCCESS;
+}
+
+DWORD const SerialPortBush::GetDataITC( DATA_FROM_BUSH& dataGet )
+{
+	DWORD fSuccess = WaitForSingleObject( m_hMutexReadData, INFINITE );
+	System::Diagnostics::Debug::Assert( fSuccess == WAIT_OBJECT_0 || fSuccess == WAIT_ABANDONED, System::String::Format( "ERROR! Mutex wait wrong return! {0:X}", fSuccess ) );
+
+	if ( ++m_dLastRead == maxStack ) //loop going through stack
+		m_dLastRead = 0;
+
+	dataGet = m_aDataReadITC[m_dLastRead];
+	m_aDataReadITC[m_dLastRead] = { 0, 0 }; //clean readen data
+	
+	if ( m_dLastRead == m_dCurrent ) //catch last data
 	{
-		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Wait for comm event fail! {0:X}", fSuccess = GetLastError() ) );
-		return fSuccess;
+		m_dCurrent = m_dLastRead = -1;
+		ResetEvent( m_hDataFromBush );
 	}
 
-	fSuccess = ReadPort( opcodeByte, infoByte );
-	if ( !fSuccess )
-	{
-		ParseInput( opcodeByte, infoByte );
-		opcodeReaden = opcodeByte;
-	}		
-	
-	return fSuccess;
+	ReleaseMutex( m_hMutexReadData );
+	return ERROR_SUCCESS;
 }
 
 DWORD SerialPortBush::ParseStateByte( BYTE infoByte )
@@ -215,6 +263,7 @@ DWORD SerialPortBush::ParseInput( BYTE opcodeByte, BYTE infoByte )
 		System::Diagnostics::Debug::Assert( !infoByte, System::String::Format( "ERROR! Wrong info opcode from bush! {0:X}", infoByte ) );
 		break;
 	case OPCODE::NOT_VALUE:
+		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Zero opcode from bush! {0:X}", opcodeByte ) );
 		break;
 	default:
 		//TODO add throw to place where will be state change
@@ -224,18 +273,14 @@ DWORD SerialPortBush::ParseInput( BYTE opcodeByte, BYTE infoByte )
 		break;
 	}
 	
-	return 0;
+	return ERROR_SUCCESS;
 }
 
 DWORD SerialPortBush::Write( const BYTE opcodeByte, const BYTE infoByte )
 {
 	WritePort( opcodeByte, infoByte );
-	return 0;
+	return ERROR_SUCCESS;
 }
-
-
-
-
 
 BYTE SerialPortBush::dallas_crc8( const BYTE * dataCheck, UINT sizeData )
 {
@@ -281,4 +326,19 @@ BYTE SerialPortBush::dallas_crc8( const BYTE * dataCheck, UINT sizeData )
 	}
 	return crcRes;
 }
+
+DWORD WINAPI fnFromBushThread( LPVOID lpParam )
+{
+	SerialPortBush* pBush = ( SerialPortBush* )lpParam;
+
+	System::Diagnostics::Debug::WriteLine(L"Read thread started");
+	do
+	{
+		pBush->ReadToITData();
+	} while ( pBush->fnIsReadThreadNeed() );
+
+	System::Diagnostics::Debug::WriteLine( L"Read thread finished" );
+	return ERROR_SUCCESS;
+}
+
 
