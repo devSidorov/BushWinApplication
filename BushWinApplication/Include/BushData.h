@@ -7,40 +7,47 @@
 class BushData
 {
 private:
-	DATABUSH bushState;
-	BUSH_STATUS status;	
-	BUSH_SCRIPT command;
+	DATABUSH m_bushState;
+	BUSH_STATUS m_status;	
+	BUSH_SCRIPT m_command;
 	
-	HANDLE hInfoChanged;
-	HANDLE hInfoMutex;
-	HANDLE hCommandEvent;
+	HANDLE m_hInfoChanged;
+	HANDLE m_hInfoMutex;
+
+	HANDLE m_hCommandEvent;
+	HANDLE m_hCommandMutex;
 public:
 
 	BushData() {
-		SecureZeroMemory( &bushState, sizeof( DATABUSH ) );
-		status = BUSH_STATUS::NO_STATUS;
-		command = BUSH_SCRIPT::NO_SCRIPT;
-		hInfoChanged = CreateEvent( NULL, TRUE, FALSE, NULL );
-		hCommandEvent = CreateEvent( NULL, TRUE, FALSE, NULL );
-		hInfoMutex = CreateMutex( NULL, FALSE, NULL );
+		SecureZeroMemory( &m_bushState, sizeof( DATABUSH ) );
+		m_status = BUSH_STATUS::NO_STATUS;
+		m_command = BUSH_SCRIPT::NO_SCRIPT;
+		m_hInfoChanged = CreateEvent( NULL, TRUE, FALSE, NULL );
+		m_hCommandEvent = CreateEvent( NULL, TRUE, FALSE, NULL );
+		m_hInfoMutex = CreateMutex( NULL, FALSE, NULL );
+		m_hCommandMutex = CreateMutex( NULL, FALSE, NULL );
 	}
 
 	~BushData() {
-		CloseHandle( hInfoChanged );
-		CloseHandle( hInfoMutex );
-		CloseHandle( hCommandEvent );
+		CloseHandle( m_hInfoChanged );
+		CloseHandle( m_hInfoMutex );
+		CloseHandle( m_hCommandEvent );
+		CloseHandle( m_hCommandMutex );
 	}
 
-	BOOL const IsDataChanged();
-	HANDLE GetCommandEvent() {
-		return hCommandEvent;
+	BOOL fnIsDataChanged() const;
+	HANDLE fnGetCommandEvent() const {
+		return m_hCommandEvent;
 	}
 	
-	DWORD SetData( const DATABUSH& dataToSave );
-	DWORD SetData( const BUSH_STATUS& statusToSave );
-	DWORD SetData( const DATABUSH& dataToSave, const BUSH_STATUS & statusToSave );
+	DWORD fnSetData( const DATABUSH& dataToSave );
+	DWORD fnSetData( const BUSH_STATUS& statusToSave );
+	DWORD fnSetData( const DATABUSH& dataToSave, const BUSH_STATUS & statusToSave );
 
-	DWORD const GetData( DATABUSH& dataReturn, BUSH_STATUS& statusReturn );
+	DWORD fnGetData( DATABUSH& dataReturn, BUSH_STATUS& statusReturn ) const;
+
+	DWORD fnSetCommand( const BUSH_SCRIPT& command );
+	DWORD fnGetCommand( BUSH_SCRIPT& command ) const;
 
 };
 

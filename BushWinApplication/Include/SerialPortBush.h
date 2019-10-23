@@ -114,10 +114,10 @@ private:
 	INT8 m_dLastRead;
 
 protected:	
-	BUSH_STATUS bushStatus;
-	DATABUSH bushState;
-	TCHAR caPortName[MAX_PATH];
-	HANDLE hCom;
+	BUSH_STATUS m_bushStatus;
+	DATABUSH m_bushState;
+	TCHAR m_acPortName[MAX_PATH];
+	HANDLE m_hComPort;
 
 public:
 	SerialPortBush() {
@@ -128,57 +128,50 @@ public:
 		SecureZeroMemory( m_aDataReadITC, sizeof( DATA_FROM_BUSH ) * maxStack );
 		m_dCurrent = m_dLastRead = -1;
 		
-		bushStatus = BUSH_STATUS::NO_STATUS;
-		SecureZeroMemory( &caPortName, sizeof( TCHAR ) * MAX_PATH );
-		SecureZeroMemory( &bushState, sizeof( DATABUSH ) );
-		hCom = INVALID_HANDLE_VALUE;
+		m_bushStatus = BUSH_STATUS::NO_STATUS;
+		SecureZeroMemory( &m_acPortName, sizeof( TCHAR ) * MAX_PATH );
+		SecureZeroMemory( &m_bushState, sizeof( DATABUSH ) );
+		m_hComPort = INVALID_HANDLE_VALUE;
 	}
 	SerialPortBush( const TCHAR* pcPortName ) : SerialPortBush() {
-		SetPortName( pcPortName );
+		fnSetPortName( pcPortName );
 	}
 	~SerialPortBush() { 
-		CloseHandle( hCom );
+		CloseHandle( m_hComPort );
 	}
 
 private:
-	DWORD SetPortName( const TCHAR* pcPortName ) {
+	DWORD fnSetPortName( const TCHAR* pcPortName ) {
 		if ( pcPortName )
-			return _tcscpy_s<MAX_PATH>( caPortName, pcPortName );
+			return _tcscpy_s<MAX_PATH>( m_acPortName, pcPortName );
 
 		return EINVAL;
 	}
 
-	DWORD ConnectPort();
-	DWORD ConfigPort();
-	DWORD StartReadThread();
-	DWORD ReadPort( BYTE& opcodeByte, BYTE& infoByte );
-	DWORD WritePort( const BYTE opcodeByte, const BYTE infoByte );
+	DWORD fnConnectPort();
+	DWORD fnConfigPort();
+	DWORD fnStartReadThread();
+	DWORD fnReadPort( BYTE& opcodeByte, BYTE& infoByte );
+	DWORD fnWritePort( const BYTE opcodeByte, const BYTE infoByte );
 	
-	DWORD PutDataITC( const DATA_FROM_BUSH & dataToPut );
-	DWORD const GetDataITC( DATA_FROM_BUSH & dataGet );
+	DWORD fnPutDataITC( const DATA_FROM_BUSH & dataToPut );
+	DWORD const fnGetDataITC( DATA_FROM_BUSH & dataGet );
 
-	DWORD ParseInput( BYTE opcodeByte, BYTE infoByte );
-	DWORD ParseStateByte( BYTE infoByte );
-	DWORD ParseChangeByte( BYTE infoByte );
+	DWORD fnParseInput( BYTE opcodeByte, BYTE infoByte );
+	DWORD fnParseStateByte( BYTE infoByte );
+	DWORD fnParseChangeByte( BYTE infoByte );
 
 
-	BYTE dallas_crc8( const BYTE * dataCheck = NULL, UINT sizeData = 0 );
+	BYTE fnDallasMaximCRC8( const BYTE * dataCheck = NULL, UINT sizeData = 0 );
 
 public:
-	DWORD Open();
-	DWORD Write( const BYTE opcodeByte, const BYTE infoByte );
+	DWORD fnOpen();
+	DWORD fnWrite( const BYTE opcodeByte, const BYTE infoByte );
 	
-	DWORD ReadToITData();
-	DWORD ReadFromITData();
+	DWORD fnReadToITData();
+	DWORD fnReadFromITData();
 
-	BUSH_STATUS GetStatus() {
-		return bushStatus;
-	}
-	const DATABUSH& GetState() { 
-		return bushState;
-	}
-	
-	HANDLE const GetEventDataFromBush() {
+	HANDLE const fnGetEventDataFromBush() {
 		return m_hDataFromBush;
 	}
 	BOOL const fnIsReadThreadNeed()

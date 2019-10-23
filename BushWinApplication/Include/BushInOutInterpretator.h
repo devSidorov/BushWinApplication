@@ -45,8 +45,8 @@ public:
 	BushInOutInterpretator( BushData* pDataToITC, const TCHAR* pcBushPortName ) : SerialPortBush( pcBushPortName ) {
 		fnSecureClassMemory();
 		m_pDataITC = pDataToITC;
-		m_haEvHandler[EVENT_ARR::COMMAND] = m_pDataITC->GetCommandEvent();
-		m_haEvHandler[EVENT_ARR::BUSH_INPUT] = GetEventDataFromBush();
+		m_haEvHandler[EVENT_ARR::COMMAND] = m_pDataITC->fnGetCommandEvent();
+		m_haEvHandler[EVENT_ARR::BUSH_INPUT] = fnGetEventDataFromBush();
 	}
 	~BushInOutInterpretator() { 
 		for ( int i = 0; i < EV_COUNT; i++ )
@@ -55,11 +55,8 @@ public:
 	}
 
 	DWORD fnStart();
-
 	DWORD fnFinish();
-
 	BOOL fnWaitForNextIO();
-
 
 private:
 	DWORD fnDefaultWait();
@@ -69,6 +66,7 @@ private:
 	DWORD fnGetHeatSens();
 	DWORD fnLockRelayScript( SCRIPT_STEP wStep, BOOL bOnMech, BOOL bIsLockScript );
 
+	DWORD fnCommandHandle();
 	DWORD fnInputBushHandle();
 	DWORD fnTimerWaitHandle();
 };

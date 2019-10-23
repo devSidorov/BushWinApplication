@@ -4,7 +4,7 @@
 
 DWORD BushInOutInterpretator::fnStart()
 {
-	DWORD fSuccess = Open();
+	DWORD fSuccess = fnOpen();
 	System::Diagnostics::Debug::Assert( !fSuccess, "ERROR! While openning port!" );
 	
 	fnConnectCheck();
@@ -31,8 +31,8 @@ DWORD BushInOutInterpretator::fnDefaultWait()
 
 DWORD BushInOutInterpretator::fnConnectCheck()
 {
-	Write( OPCODE::CONNECT_CHECK, INFO_BYTE::NO_INFO );
-	m_pDataITC->SetData( BUSH_STATUS::DISCONNECTED );
+	fnWrite( OPCODE::CONNECT_CHECK, INFO_BYTE::NO_INFO );
+	m_pDataITC->fnSetData( BUSH_STATUS::DISCONNECTED );
 	m_script = BUSH_SCRIPT::INIT;
 	m_waitForOpcode = OPCODE::CONNECT_FINE;
 	m_dwWaitTime = M_WAIT_TIME_DEFAULT;
@@ -44,7 +44,7 @@ DWORD BushInOutInterpretator::fnConnectCheck()
 // function must be without script setting because some scripts use it to greed BUSH
 DWORD BushInOutInterpretator::fnAskStateInit()
 {
-	Write( OPCODE::STATE_GET, INFO_BYTE::NO_INFO );
+	fnWrite( OPCODE::STATE_GET, INFO_BYTE::NO_INFO );
 	m_waitForOpcode = OPCODE::STATE_INFO;
 	m_dwWaitTime = M_WAIT_TIME_DEFAULT;
 	m_bRepeatErr = FALSE;
@@ -63,7 +63,7 @@ DWORD BushInOutInterpretator::fnAskState()
 DWORD BushInOutInterpretator::fnGetHeatSens()
 {
 	m_script = BUSH_SCRIPT::GET_TEMPRETURE;
-	Write( OPCODE::TEMP_GET, INFO_BYTE::TEMP_AVERAGE );
+	fnWrite( OPCODE::TEMP_GET, INFO_BYTE::TEMP_AVERAGE );
 	m_waitForOpcode = OPCODE::TEMP_SENS_AVERAGE;
 	m_dwWaitTime = M_WAIT_TIME_DEFAULT;
 	m_bRepeatErr = FALSE;
@@ -85,17 +85,17 @@ DWORD BushInOutInterpretator::fnLockRelayScript( SCRIPT_STEP wStep = SCRIPT_STEP
 	}
 	else if ( wStep == SCRIPT_STEP::SECOND_STEP )
 	{
-		Write( ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::LOCK_UNLOCK ) ? OPCODE::LOCK_CHANGE : OPCODE::RELAY_CHANGE,
+		fnWrite( ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::LOCK_UNLOCK ) ? OPCODE::LOCK_CHANGE : OPCODE::RELAY_CHANGE,
 			   ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::RELAY_ON ) ? INFO_BYTE::ON : INFO_BYTE::OFF );
 		m_waitForOpcode = OPCODE::STATE_CHANGE;
 		m_bRepeatErr = FALSE;
 	}
 	else if ( wStep == SCRIPT_STEP::THIRD_STEP )
 	{
-		if ( bushState.info[ ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::LOCK_UNLOCK ) ? INFO_BYTE_BITS::LOCK : INFO_BYTE_BITS::RELAY ] 
+		if ( m_bushState.info[ ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::LOCK_UNLOCK ) ? INFO_BYTE_BITS::LOCK : INFO_BYTE_BITS::RELAY ] 
 			 == ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::RELAY_ON ) ? 1 : 0 ) //check if state is changed as script asked
 		{
-			m_pDataITC->SetData( bushState, bushStatus );
+			m_pDataITC->fnSetData( m_bushState, m_bushStatus );
 			fnDefaultWait();
 		}
 		else; //waiting for another opcode, do nothing and wait for opcode or timer to send repeat of command
@@ -118,6 +118,7 @@ BOOL BushInOutInterpretator::fnWaitForNextIO()
 	switch ( fSuccess )
 	{
 	case WAIT_OBJECT_0: //CommandEvent
+		
 		break;
 	case ( WAIT_OBJECT_0 + EVENT_ARR::BUSH_INPUT ): //Something from Bush
 		fnInputBushHandle();
@@ -136,9 +137,35 @@ BOOL BushInOutInterpretator::fnWaitForNextIO()
 	return IsCommandNotDissconnect;
 }
 
+DWORD BushInOutInterpretator::fnCommandHandle()
+{
+	BUSH_SCRIPT opcodeTaken = BUSH_SCRIPT::NO_SCRIPT;
+
+	m_pDataITC->fnGetCommand( opcodeTaken );
+	switch ( opcodeTaken )
+	{		
+	case BUSH_SCRIPT::LOCK_LOCK:
+	case BUSH_SCRIPT::LOCK_UNLOCK:
+	case BUSH_SCRIPT::RELAY_ON:
+	case BUSH_SCRIPT::RELAY_OFF:
+		fnLockRelayScript( SCRIPT_STEP::FIRST_STEP,
+						 ( ( opcodeTaken == BUSH_SCRIPT::LOCK_LOCK || opcodeTaken == BUSH_SCRIPT::RELAY_ON ) ? TRUE : FALSE ),
+						 ( ( opcodeTaken == BUSH_SCRIPT::LOCK_LOCK || opcodeTaken == BUSH_SCRIPT::LOCK_UNLOCK ) ? TRUE : FALSE ) );
+		break;		
+	case BUSH_SCRIPT::DISCONNECT:
+	//TODO add implementation	
+		break;
+	default:
+		System::Diagnostics::Debug::WriteLine( System::String::Format( "WARNING! No implementation for such command! {0,2:X}", (WORD)opcodeTaken ) );
+		break;
+	}
+
+	return ERROR_SUCCESS;
+}
+
 DWORD BushInOutInterpretator::fnInputBushHandle()
 {
-	DWORD returnedOpcode = ReadFromITData();
+	DWORD returnedOpcode = fnReadFromITData();
 
 	if ( returnedOpcode == m_waitForOpcode )
 	{
@@ -168,7 +195,7 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 				System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Input processing, LOCK/UNLOKC script, unwaited OPCODE {0:X}", returnedOpcode ) );
 			break;
 		case BUSH_SCRIPT::GET_TEMPRETURE:
-			m_pDataITC->SetData( bushState, bushStatus ); //TODO add temp check to set status overheat
+			m_pDataITC->fnSetData( m_bushState, m_bushStatus ); //TODO add temp check to set status overheat
 			fnDefaultWait();
 			break;		
 		default:
@@ -181,9 +208,9 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 			 returnedOpcode == OPCODE::ALERT_TEMP_SENS ||
 			 returnedOpcode == OPCODE::ALERT_TEMP_OVERHEAT )
 			//status changed in data parsing
-			m_pDataITC->SetData( bushStatus );
+			m_pDataITC->fnSetData( m_bushStatus );
 		else if ( returnedOpcode == OPCODE::STATE_CHANGE )
-			m_pDataITC->SetData( bushState );
+			m_pDataITC->fnSetData( m_bushState );
 		else if ( m_waitForOpcode )
 			; //waiting for another opcode, do nothing and wait for opcode or timer to send repeat of command 
 		else

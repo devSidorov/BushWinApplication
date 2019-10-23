@@ -157,9 +157,21 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\resource\ProgressError.ico" />
-    <Image Include="..\resource\ProgressSkip.ico" />
-    <Image Include="..\resource\ProgressWarn.ico" />
+    <Image Include="..\resource\BushClosed.ico">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="..\resource\BushDisconnected.ico">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="..\resource\BushLocked.ico">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="..\resource\BushOpened.ico">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="..\resource\BushOverHeat.ico">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

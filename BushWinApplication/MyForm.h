@@ -24,11 +24,8 @@ namespace BushWinApplication {
 			
 			//TODO add variant if no com port found
 			ReNew_ComPorts();
-			StatusLabelUpdate( 0 );
-
-
-			String^ IcoName = "..//resource//ProgressWarn.ico";
-			this->trayNotification->Icon = Form::Icon->ExtractAssociatedIcon( "..//resource//ProgressWarn.ico" );
+			fnStatusLabelUpdate( 0 );
+			fnTrayIconUpdate( 0 );
 		}
 
 	protected:
@@ -42,67 +39,46 @@ namespace BushWinApplication {
 				delete components;
 			}
 		}
-	private: System::Windows::Forms::Label^  labelPort;
-	protected:
-
-	protected:
-
-	private: System::Windows::Forms::CheckBox^  checkBox1;
-	private: System::Windows::Forms::CheckBox^  checkBox2;
-	private: System::Windows::Forms::ComboBox^  comBoxPortNames;
-	private: System::Windows::Forms::NotifyIcon^  trayNotification;
-
-
-
-	private: System::Windows::Forms::ContextMenuStrip^  trayMenu;
-	private: System::Windows::Forms::ToolStripMenuItem^  trayMenuItemDoor;
-
-
-
-
-	private: System::Windows::Forms::ToolStripMenuItem^  trayMenuItemSettings;
-
-	private: System::Windows::Forms::ToolStripMenuItem^  trayMenuItemExit;
-
-
-	private: System::Windows::Forms::Label^  label2;
-	private: System::Windows::Forms::GroupBox^  groupBushInfo;
-
-	private: System::Windows::Forms::Label^  labelNameBushRelay;
-	private: System::Windows::Forms::Label^  labelNameBushSens;
-	private: System::Windows::Forms::Label^  labelNameBushLock;
-	private: System::Windows::Forms::Label^  labelNameBushDoor;
-	private: System::Windows::Forms::Label^  labelNameBushConnect;
-	private: System::Windows::Forms::Label^  labelBushConnect;
-	private: System::Windows::Forms::Label^  labelBushDoor;
-
-
-	private: System::Windows::Forms::Label^  labelBushRelay;
-	private: System::Windows::Forms::Label^  labelBushSens;
-	private: System::Windows::Forms::Label^  labelBushLock;
-	private: System::Windows::Forms::Timer^  timerCheckData;
-
-
-
-
-
-
-
-	private: System::ComponentModel::IContainer^  components;
-
+	private: 
+		System::Windows::Forms::Label^  labelPort;
+		System::Windows::Forms::CheckBox^  chBoxLockDoor;
+		System::Windows::Forms::CheckBox^  chBoxOverheat;
+		System::Windows::Forms::ComboBox^  comBoxPortNames;
+		System::Windows::Forms::NotifyIcon^  trayNotification;
+		System::Windows::Forms::ContextMenuStrip^  trayMenu;
+		System::Windows::Forms::ToolStripMenuItem^  trayMenuItemDoor;
+		System::Windows::Forms::ToolStripMenuItem^  trayMenuItemSettings;
+		System::Windows::Forms::ToolStripMenuItem^  trayMenuItemExit;
+		System::Windows::Forms::GroupBox^  groupBushInfo;
+		System::Windows::Forms::Label^  labelNameBushRelay;
+		System::Windows::Forms::Label^  labelNameBushSens;
+		System::Windows::Forms::Label^  labelNameBushLock;
+		System::Windows::Forms::Label^  labelNameBushDoor;
+		System::Windows::Forms::Label^  labelNameBushConnect;
+		System::Windows::Forms::Label^  labelBushConnect;
+		System::Windows::Forms::Label^  labelBushDoor;
+		System::Windows::Forms::Label^  labelBushRelay;
+		System::Windows::Forms::Label^  labelBushSens;
+		System::Windows::Forms::Label^  labelBushLock;
+		System::Windows::Forms::Timer^  timerCheckData;
+		System::Windows::Forms::GroupBox^  groupBoxTrayConfig;
+		System::ComponentModel::IContainer^  components;
+	
 	private:
 		/// <summary>
 		/// Required designer variable.
 
 		/// </summary>
 
-		Int32 BushIOThreadStart( String^ pPortName );
-		Void FormGuiEnable( bool isTRUE );
+		Boolean m_isDoorClosed;
+		Boolean m_isLockLocked;
+		Boolean m_isRelayOn;
 
-		Void InfoLabelsReset();
-
-		Void StatusLabelUpdate( const Int32& bushStatus );
-
+		String^ m_icoDisconnect = "..//resource//BushDisconnected.ico";
+		String^ m_icoOpen = "..//resource//BushOpened.ico";
+		String^ m_icoClose = "..//resource//BushClosed.ico";
+		String^ m_icoLock = "..//resource//BushLocked.ico";
+		String^ m_icoOverHeat = "..//resource//BushOverHeat.ico";
 
 #pragma region Windows Form Designer generated code
 		/// <summary>
@@ -112,16 +88,16 @@ namespace BushWinApplication {
 		void InitializeComponent( void )
 		{
 			this->components = ( gcnew System::ComponentModel::Container() );
+			System::ComponentModel::ComponentResourceManager^  resources = ( gcnew System::ComponentModel::ComponentResourceManager( MyForm::typeid ) );
 			this->labelPort = ( gcnew System::Windows::Forms::Label() );
-			this->checkBox1 = ( gcnew System::Windows::Forms::CheckBox() );
-			this->checkBox2 = ( gcnew System::Windows::Forms::CheckBox() );
+			this->chBoxLockDoor = ( gcnew System::Windows::Forms::CheckBox() );
+			this->chBoxOverheat = ( gcnew System::Windows::Forms::CheckBox() );
 			this->comBoxPortNames = ( gcnew System::Windows::Forms::ComboBox() );
 			this->trayNotification = ( gcnew System::Windows::Forms::NotifyIcon( this->components ) );
 			this->trayMenu = ( gcnew System::Windows::Forms::ContextMenuStrip( this->components ) );
 			this->trayMenuItemDoor = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
 			this->trayMenuItemSettings = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
 			this->trayMenuItemExit = ( gcnew System::Windows::Forms::ToolStripMenuItem() );
-			this->label2 = ( gcnew System::Windows::Forms::Label() );
 			this->groupBushInfo = ( gcnew System::Windows::Forms::GroupBox() );
 			this->labelBushRelay = ( gcnew System::Windows::Forms::Label() );
 			this->labelBushSens = ( gcnew System::Windows::Forms::Label() );
@@ -134,8 +110,10 @@ namespace BushWinApplication {
 			this->labelNameBushDoor = ( gcnew System::Windows::Forms::Label() );
 			this->labelNameBushConnect = ( gcnew System::Windows::Forms::Label() );
 			this->timerCheckData = ( gcnew System::Windows::Forms::Timer( this->components ) );
+			this->groupBoxTrayConfig = ( gcnew System::Windows::Forms::GroupBox() );
 			this->trayMenu->SuspendLayout();
 			this->groupBushInfo->SuspendLayout();
+			this->groupBoxTrayConfig->SuspendLayout();
 			this->SuspendLayout();
 			// 
 			// labelPort
@@ -148,27 +126,27 @@ namespace BushWinApplication {
 			this->labelPort->TabIndex = 1;
 			this->labelPort->Text = L"Порт:";
 			// 
-			// checkBox1
+			// chBoxLockDoor
 			// 
-			this->checkBox1->AutoSize = true;
-			this->checkBox1->Location = System::Drawing::Point( 22, 54 );
-			this->checkBox1->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
-			this->checkBox1->Name = L"checkBox1";
-			this->checkBox1->Size = System::Drawing::Size( 238, 22 );
-			this->checkBox1->TabIndex = 2;
-			this->checkBox1->Text = L"Нотификация открытия двери";
-			this->checkBox1->UseVisualStyleBackColor = true;
+			this->chBoxLockDoor->AutoSize = true;
+			this->chBoxLockDoor->Location = System::Drawing::Point( 7, 23 );
+			this->chBoxLockDoor->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
+			this->chBoxLockDoor->Name = L"chBoxLockDoor";
+			this->chBoxLockDoor->Size = System::Drawing::Size( 207, 22 );
+			this->chBoxLockDoor->TabIndex = 2;
+			this->chBoxLockDoor->Text = L"Состояние двери и замка";
+			this->chBoxLockDoor->UseVisualStyleBackColor = true;
 			// 
-			// checkBox2
+			// chBoxOverheat
 			// 
-			this->checkBox2->AutoSize = true;
-			this->checkBox2->Location = System::Drawing::Point( 22, 87 );
-			this->checkBox2->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
-			this->checkBox2->Name = L"checkBox2";
-			this->checkBox2->Size = System::Drawing::Size( 308, 22 );
-			this->checkBox2->TabIndex = 3;
-			this->checkBox2->Text = L"Нотификация превышения температуры";
-			this->checkBox2->UseVisualStyleBackColor = true;
+			this->chBoxOverheat->AutoSize = true;
+			this->chBoxOverheat->Location = System::Drawing::Point( 7, 51 );
+			this->chBoxOverheat->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
+			this->chBoxOverheat->Name = L"chBoxOverheat";
+			this->chBoxOverheat->Size = System::Drawing::Size( 273, 22 );
+			this->chBoxOverheat->TabIndex = 3;
+			this->chBoxOverheat->Text = L"Превышение рабочей температуры";
+			this->chBoxOverheat->UseVisualStyleBackColor = true;
 			// 
 			// comBoxPortNames
 			// 
@@ -177,7 +155,7 @@ namespace BushWinApplication {
 			this->comBoxPortNames->Name = L"comBoxPortNames";
 			this->comBoxPortNames->Size = System::Drawing::Size( 288, 26 );
 			this->comBoxPortNames->TabIndex = 4;
-			this->comBoxPortNames->Text = L"Необходимо выбрать порт подключения";
+			this->comBoxPortNames->Text = L"Не выбран";
 			this->comBoxPortNames->SelectedIndexChanged += gcnew System::EventHandler( this, &MyForm::comBoxPortNames_SelectedIndexChanged );
 			// 
 			// trayNotification
@@ -201,7 +179,7 @@ namespace BushWinApplication {
 			// 
 			this->trayMenuItemDoor->Name = L"trayMenuItemDoor";
 			this->trayMenuItemDoor->Size = System::Drawing::Size( 133, 22 );
-			this->trayMenuItemDoor->Text = L"Дверь";
+			this->trayMenuItemDoor->Visible = false;
 			// 
 			// trayMenuItemSettings
 			// 
@@ -212,18 +190,11 @@ namespace BushWinApplication {
 			// 
 			// trayMenuItemExit
 			// 
+			this->trayMenuItemExit->BackColor = System::Drawing::SystemColors::ControlDarkDark;
 			this->trayMenuItemExit->Name = L"trayMenuItemExit";
 			this->trayMenuItemExit->Size = System::Drawing::Size( 133, 22 );
 			this->trayMenuItemExit->Text = L"Выход";
 			this->trayMenuItemExit->Click += gcnew System::EventHandler( this, &MyForm::toolStripMenuItem1_Click );
-			// 
-			// label2
-			// 
-			this->label2->AutoSize = true;
-			this->label2->Location = System::Drawing::Point( 21, 116 );
-			this->label2->Name = L"label2";
-			this->label2->Size = System::Drawing::Size( 0, 18 );
-			this->label2->TabIndex = 5;
 			// 
 			// groupBushInfo
 			// 
@@ -239,9 +210,9 @@ namespace BushWinApplication {
 			this->groupBushInfo->Controls->Add( this->labelNameBushDoor );
 			this->groupBushInfo->Controls->Add( this->labelNameBushConnect );
 			this->groupBushInfo->FlatStyle = System::Windows::Forms::FlatStyle::Flat;
-			this->groupBushInfo->Location = System::Drawing::Point( 12, 137 );
+			this->groupBushInfo->Location = System::Drawing::Point( 12, 50 );
 			this->groupBushInfo->Name = L"groupBushInfo";
-			this->groupBushInfo->Size = System::Drawing::Size( 410, 126 );
+			this->groupBushInfo->Size = System::Drawing::Size( 410, 111 );
 			this->groupBushInfo->TabIndex = 7;
 			this->groupBushInfo->TabStop = false;
 			this->groupBushInfo->Text = L"Состояние устройста:";
@@ -336,21 +307,31 @@ namespace BushWinApplication {
 			this->timerCheckData->Interval = 500;
 			this->timerCheckData->Tick += gcnew System::EventHandler( this, &MyForm::timerCheckData_Tick );
 			// 
+			// groupBoxTrayConfig
+			// 
+			this->groupBoxTrayConfig->Controls->Add( this->chBoxLockDoor );
+			this->groupBoxTrayConfig->Controls->Add( this->chBoxOverheat );
+			this->groupBoxTrayConfig->Location = System::Drawing::Point( 12, 167 );
+			this->groupBoxTrayConfig->Name = L"groupBoxTrayConfig";
+			this->groupBoxTrayConfig->Size = System::Drawing::Size( 410, 81 );
+			this->groupBoxTrayConfig->TabIndex = 8;
+			this->groupBoxTrayConfig->TabStop = false;
+			this->groupBoxTrayConfig->Text = L"Настройка визуальной индикации:";
+			// 
 			// MyForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF( 9, 18 );
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size( 434, 353 );
+			this->ClientSize = System::Drawing::Size( 434, 260 );
+			this->Controls->Add( this->groupBoxTrayConfig );
 			this->Controls->Add( this->groupBushInfo );
-			this->Controls->Add( this->label2 );
 			this->Controls->Add( this->comBoxPortNames );
-			this->Controls->Add( this->checkBox2 );
-			this->Controls->Add( this->checkBox1 );
 			this->Controls->Add( this->labelPort );
 			this->Cursor = System::Windows::Forms::Cursors::Default;
 			this->Font = ( gcnew System::Drawing::Font( L"Microsoft Sans Serif", 11.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 														static_cast< System::Byte >( 204 ) ) );
 			this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedSingle;
+			this->Icon = ( cli::safe_cast< System::Drawing::Icon^ >( resources->GetObject( L"$this.Icon" ) ) );
 			this->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
 			this->MaximizeBox = false;
 			this->MinimizeBox = false;
@@ -364,12 +345,28 @@ namespace BushWinApplication {
 			this->trayMenu->ResumeLayout( false );
 			this->groupBushInfo->ResumeLayout( false );
 			this->groupBushInfo->PerformLayout();
+			this->groupBoxTrayConfig->ResumeLayout( false );
+			this->groupBoxTrayConfig->PerformLayout();
 			this->ResumeLayout( false );
 			this->PerformLayout();
 
 		}
 #pragma endregion
 	private:
+		
+		Int32 BushIOThreadStart( String^ pPortName );
+		Void FormGuiEnable( bool isTRUE );
+
+		Void InfoLabelsReset();
+
+		Void fnStatusLabelUpdate( Int16 bushStatus );
+		Void fnTrayMenuUpdate( Int16 bushStatus, Boolean bIsLockLocked );
+		Void fnTrayIconUpdate( Int16 bushStatus );
+		
+		Void fnTrayIconSet( String^ IconName ) {
+			trayNotification->Icon = Form::Icon->ExtractAssociatedIcon( IconName );
+		}
+				
 		System::Void MyForm_Load( System::Object^  sender, System::EventArgs^  e ) {
 		}
 		;
@@ -379,7 +376,6 @@ namespace BushWinApplication {
 			//TODO Exclude right click
 			this->WindowState = FormWindowState::Normal;
 			//this->Show();
-			this->trayNotification->Icon = Icon->ExtractAssociatedIcon( "..//resource//ProgressSkip.ico" );
 		}
 
 		System::Void MyForm_FormClosing( System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e ) {
@@ -402,7 +398,7 @@ namespace BushWinApplication {
 			return;
 		}
 		System::Void timerCheckData_Tick( System::Object^  sender, System::EventArgs^  e ) {
-			OnTimerUpdate();
+			fnOnTimerUpdate();
 		}
 
 		System::Void ReNew_ComPorts() {
@@ -421,7 +417,8 @@ namespace BushWinApplication {
 			Int32 fSuccess = BushIOThreadStart( comBoxPortNames->SelectedItem->ToString() );
 		}
 
-		Int32 OnTimerUpdate();
+		Int32 fnOnTimerUpdate();
+		
 };
 	
  }
