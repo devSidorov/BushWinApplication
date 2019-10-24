@@ -87,8 +87,9 @@ DWORD BushInOutInterpretator::fnLockRelayScript( SCRIPT_STEP wStep = SCRIPT_STEP
 	{
 		fnWrite( ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::LOCK_UNLOCK ) ? OPCODE::LOCK_CHANGE : OPCODE::RELAY_CHANGE,
 			   ( m_script == BUSH_SCRIPT::LOCK_LOCK || m_script == BUSH_SCRIPT::RELAY_ON ) ? INFO_BYTE::ON : INFO_BYTE::OFF );
-		m_waitForOpcode = OPCODE::STATE_CHANGE;
-		m_bRepeatErr = FALSE;
+		/*m_waitForOpcode = OPCODE::STATE_CHANGE;
+		m_bRepeatErr = FALSE;*/
+		fnAskState(); //bush dont send change state after lock
 	}
 	else if ( wStep == SCRIPT_STEP::THIRD_STEP )
 	{
@@ -118,7 +119,7 @@ BOOL BushInOutInterpretator::fnWaitForNextIO()
 	switch ( fSuccess )
 	{
 	case WAIT_OBJECT_0: //CommandEvent
-		
+		fnCommandHandle();
 		break;
 	case ( WAIT_OBJECT_0 + EVENT_ARR::BUSH_INPUT ): //Something from Bush
 		fnInputBushHandle();
@@ -190,7 +191,7 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 			if ( m_waitForOpcode == OPCODE::STATE_INFO )
 				fnLockRelayScript( SCRIPT_STEP::SECOND_STEP );
 			else if ( m_waitForOpcode == OPCODE::STATE_CHANGE )
-				fnLockRelayScript( SCRIPT_STEP::SECOND_STEP );
+				fnLockRelayScript( SCRIPT_STEP::THIRD_STEP );
 			else 
 				System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Input processing, LOCK/UNLOKC script, unwaited OPCODE {0:X}", returnedOpcode ) );
 			break;
@@ -210,7 +211,8 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 			//status changed in data parsing
 			m_pDataITC->fnSetData( m_bushStatus );
 		else if ( returnedOpcode == OPCODE::STATE_CHANGE )
-			m_pDataITC->fnSetData( m_bushState );
+			fnAskState(); //TODO ok, while BUSH doesnt send valid information in change state info 
+			//m_pDataITC->fnSetData( m_bushState );
 		else if ( m_waitForOpcode )
 			; //waiting for another opcode, do nothing and wait for opcode or timer to send repeat of command 
 		else

@@ -48,6 +48,12 @@ Void BushWinApplication::MyForm::InfoLabelsReset()
 	labelBushRelay->Text = L"";	
 }
 
+Void BushWinApplication::MyForm::fnLockUnlockDoor()
+{
+	ITCdataBush.fnSetCommand( ( m_isLockLocked ) ? BUSH_SCRIPT::LOCK_UNLOCK : BUSH_SCRIPT::LOCK_LOCK );	
+	return;
+}
+
 Void BushWinApplication::MyForm::fnStatusLabelUpdate( Int16 bushStatus )
 {
 	switch ( bushStatus )
@@ -138,26 +144,24 @@ Int32 BushWinApplication::MyForm::fnOnTimerUpdate()
 
 Void BushWinApplication::MyForm::fnTrayIconUpdate( Int16 bushStatus )
 {
-	Drawing::Icon^ chosenIcon;
-	
 	switch ( bushStatus )
 	{
 	case BUSH_STATUS::NO_STATUS:
 	case BUSH_STATUS::DISCONNECTED:
-		fnTrayIconSet( m_icoDisconnect );
+		trayNotification->Icon = m_pIcoDisconnect;
 		break;
 	case BUSH_STATUS::CONNECTED:
 	case BUSH_STATUS::HEAT_SENS_ERR:
 	case BUSH_STATUS::BUSH_BRISH_ERR:
 		if ( !m_isDoorClosed )
-			fnTrayIconSet( m_icoOpen );
+			trayNotification->Icon = m_pIcoOpen;
 		else if ( m_isLockLocked )
-			fnTrayIconSet( m_icoLock );
+			trayNotification->Icon = m_pIcoLock;
 		else
-			fnTrayIconSet( m_icoClose );
+			trayNotification->Icon = m_pIcoClose;
 		break;
 	case BUSH_STATUS::OVERHEATED:
-		fnTrayIconSet( m_icoOverHeat );
+		trayNotification->Icon = m_pIcoOverHeat;
 		break;
 	default:
 		System::Diagnostics::Debug::WriteLine( "WARNING! No such bush status in fnTrayIconUpdate" );

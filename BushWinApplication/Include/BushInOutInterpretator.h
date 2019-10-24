@@ -2,8 +2,8 @@
 #include "SerialPortBush.h"
 #include "BushData.h"
 
-const WORD M_WAIT_TIME_DEFAULT = 1500;
-const WORD M_WAIT_TIME_UPDATE = 5000;
+const WORD M_WAIT_TIME_DEFAULT = 1000;
+const WORD M_WAIT_TIME_UPDATE = 10000;
 
 enum SCRIPT_STEP
 {

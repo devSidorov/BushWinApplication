@@ -109,7 +109,7 @@ DWORD SerialPortBush::fnWritePort( BYTE opcodeByte, BYTE infoByte )
 	BYTE bufferWrite[COUNT_BYTE] = { FIRST_BYTE_VALUE, opcodeByte, infoByte, 0 };
 	DWORD bytesIOoperated;
 	
-	bufferWrite[3] = fnDallasMaximCRC8( bufferWrite + 1, INFO_BYTES );
+	bufferWrite[CACHE_BYTE] = fnDallasMaximCRC8( bufferWrite + 1, INFO_BYTES );
 
 	DWORD fSuccess = WriteFile( m_hComPort,
 								bufferWrite,
@@ -142,7 +142,7 @@ DWORD SerialPortBush::fnReadToITData()
 	fSuccess = fnReadPort( dataReaden.opcodeByte, dataReaden.infoByte );
 	if ( !fSuccess )
 	{
-		System::Diagnostics::Debug::WriteLine( System::String::Format( "INFO! Readen from BUSH! {0,2:X} {1,2:X}", dataReaden.opcodeByte, dataReaden.infoByte ) );
+		System::Diagnostics::Trace::WriteLine( System::String::Format( "INFO! Readen from BUSH! {0,2:X} {1,2:X}", dataReaden.opcodeByte, dataReaden.infoByte ) );
 		fnPutDataITC( dataReaden );
 	}
 					
@@ -282,7 +282,8 @@ DWORD SerialPortBush::fnParseInput( BYTE opcodeByte, BYTE infoByte )
 DWORD SerialPortBush::fnWrite( const BYTE opcodeByte, const BYTE infoByte )
 {
 	fnWritePort( opcodeByte, infoByte );
-	return ERROR_SUCCESS;
+	System::Diagnostics::Trace::WriteLine( System::String::Format( "INFO! Written to BUSH! {0,2:X} {1,2:X}", opcodeByte, infoByte ) );
+    return ERROR_SUCCESS;
 }
 
 BYTE SerialPortBush::fnDallasMaximCRC8( const BYTE * dataCheck, UINT sizeData )

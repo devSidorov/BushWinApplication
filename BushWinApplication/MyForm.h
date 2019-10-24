@@ -18,14 +18,15 @@ namespace BushWinApplication {
 		MyForm( void )
 		{
 			InitializeComponent();
-			//
-			//TODO: Add the constructor code here
-			//
-			
-			//TODO add variant if no com port found
-			ReNew_ComPorts();
+		
+			Icon = m_pIcoDisconnect;
+			ShowIcon = true;
+
 			fnStatusLabelUpdate( 0 );
 			fnTrayIconUpdate( 0 );
+
+			Diagnostics::Trace::Listeners->Add( gcnew System::Diagnostics::TextWriterTraceListener( m_logFile ) );
+			Diagnostics::Trace::AutoFlush = true;
 		}
 
 	protected:
@@ -74,11 +75,13 @@ namespace BushWinApplication {
 		Boolean m_isLockLocked;
 		Boolean m_isRelayOn;
 
-		String^ m_icoDisconnect = "..//resource//BushDisconnected.ico";
-		String^ m_icoOpen = "..//resource//BushOpened.ico";
-		String^ m_icoClose = "..//resource//BushClosed.ico";
-		String^ m_icoLock = "..//resource//BushLocked.ico";
-		String^ m_icoOverHeat = "..//resource//BushOverHeat.ico";
+		Drawing::Icon^ m_pIcoDisconnect = Form::Icon->ExtractAssociatedIcon(  "..//resource//BushDisconnected.ico" );
+		Drawing::Icon^ m_pIcoOpen = Form::Icon->ExtractAssociatedIcon( "..//resource//BushOpened.ico" );
+		Drawing::Icon^ m_pIcoClose = Form::Icon->ExtractAssociatedIcon( "..//resource//BushClosed.ico" );
+		Drawing::Icon^ m_pIcoLock = Form::Icon->ExtractAssociatedIcon( "..//resource//BushLocked.ico" );
+		Drawing::Icon^ m_pIcoOverHeat = Form::Icon->ExtractAssociatedIcon( "..//resource//BushOverHeat.ico" );
+
+		IO::FileStream^ m_logFile = gcnew IO::FileStream( "..//Logs//bush_runtime.log", IO::FileMode::Append );
 
 #pragma region Windows Form Designer generated code
 		/// <summary>
@@ -88,7 +91,6 @@ namespace BushWinApplication {
 		void InitializeComponent( void )
 		{
 			this->components = ( gcnew System::ComponentModel::Container() );
-			System::ComponentModel::ComponentResourceManager^  resources = ( gcnew System::ComponentModel::ComponentResourceManager( MyForm::typeid ) );
 			this->labelPort = ( gcnew System::Windows::Forms::Label() );
 			this->chBoxLockDoor = ( gcnew System::Windows::Forms::CheckBox() );
 			this->chBoxOverheat = ( gcnew System::Windows::Forms::CheckBox() );
@@ -156,12 +158,13 @@ namespace BushWinApplication {
 			this->comBoxPortNames->Size = System::Drawing::Size( 288, 26 );
 			this->comBoxPortNames->TabIndex = 4;
 			this->comBoxPortNames->Text = L"Не выбран";
+			this->comBoxPortNames->DropDown += gcnew System::EventHandler( this, &MyForm::comBoxPortNames_DropDown );
 			this->comBoxPortNames->SelectedIndexChanged += gcnew System::EventHandler( this, &MyForm::comBoxPortNames_SelectedIndexChanged );
 			// 
 			// trayNotification
 			// 
 			this->trayNotification->ContextMenuStrip = this->trayMenu;
-			this->trayNotification->Text = L"notifyIcon1";
+			this->trayNotification->Text = L"ПО Эдельвейс-СС-19-С";
 			this->trayNotification->Visible = true;
 			this->trayNotification->MouseDoubleClick += gcnew System::Windows::Forms::MouseEventHandler( this, &MyForm::trayIcon_MouseDoubleClick );
 			// 
@@ -180,6 +183,7 @@ namespace BushWinApplication {
 			this->trayMenuItemDoor->Name = L"trayMenuItemDoor";
 			this->trayMenuItemDoor->Size = System::Drawing::Size( 133, 22 );
 			this->trayMenuItemDoor->Visible = false;
+			this->trayMenuItemDoor->Click += gcnew System::EventHandler( this, &MyForm::trayMenuItemDoor_Click );
 			// 
 			// trayMenuItemSettings
 			// 
@@ -331,12 +335,12 @@ namespace BushWinApplication {
 			this->Font = ( gcnew System::Drawing::Font( L"Microsoft Sans Serif", 11.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 														static_cast< System::Byte >( 204 ) ) );
 			this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedSingle;
-			this->Icon = ( cli::safe_cast< System::Drawing::Icon^ >( resources->GetObject( L"$this.Icon" ) ) );
 			this->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
 			this->MaximizeBox = false;
 			this->MinimizeBox = false;
 			this->Name = L"MyForm";
 			this->RightToLeft = System::Windows::Forms::RightToLeft::No;
+			this->ShowIcon = false;
 			this->ShowInTaskbar = false;
 			this->Text = L"Настройка";
 			this->WindowState = System::Windows::Forms::FormWindowState::Minimized;
@@ -358,27 +362,26 @@ namespace BushWinApplication {
 		Void FormGuiEnable( bool isTRUE );
 
 		Void InfoLabelsReset();
+		Void fnLockUnlockDoor();
 
 		Void fnStatusLabelUpdate( Int16 bushStatus );
 		Void fnTrayMenuUpdate( Int16 bushStatus, Boolean bIsLockLocked );
 		Void fnTrayIconUpdate( Int16 bushStatus );
-		
-		Void fnTrayIconSet( String^ IconName ) {
-			trayNotification->Icon = Form::Icon->ExtractAssociatedIcon( IconName );
-		}
 				
-		System::Void MyForm_Load( System::Object^  sender, System::EventArgs^  e ) {
+		Void MyForm_Load( System::Object^  sender, System::EventArgs^  e ) {
 		}
 		;
 
-		System::Void trayIcon_MouseDoubleClick( System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e ) {
+		Void trayIcon_MouseDoubleClick( System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e ) {
 			//TODO update form
 			//TODO Exclude right click
 			this->WindowState = FormWindowState::Normal;
+			this->TopMost = true;
+			this->TopMost = false;
 			//this->Show();
 		}
 
-		System::Void MyForm_FormClosing( System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e ) {
+		Void MyForm_FormClosing( System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e ) {
 			if ( e->CloseReason == CloseReason::UserClosing )
 			{
 				e->Cancel = true;
@@ -389,19 +392,29 @@ namespace BushWinApplication {
 		}
 
 
-		System::Void toolStripMenuItem1_Click( System::Object^  sender, System::EventArgs^  e ) {
+		Void toolStripMenuItem1_Click( System::Object^  sender, System::EventArgs^  e ) {
 			Application::Exit();
 			return;
 		}
-		System::Void toolStripMenuItem2_Click( System::Object^  sender, System::EventArgs^  e ) {
+		Void toolStripMenuItem2_Click( System::Object^  sender, System::EventArgs^  e ) {
 			this->WindowState = FormWindowState::Normal;
 			return;
 		}
-		System::Void timerCheckData_Tick( System::Object^  sender, System::EventArgs^  e ) {
+		Void trayMenuItemDoor_Click( System::Object^  sender, System::EventArgs^  e ) {
+			fnLockUnlockDoor();
+			return;
+		}
+		Void timerCheckData_Tick( System::Object^  sender, System::EventArgs^  e ) {
 			fnOnTimerUpdate();
+			return;
+		}
+		Void comBoxPortNames_DropDown( System::Object^  sender, System::EventArgs^  e ) {
+			ReNew_ComPorts();
+			return;
 		}
 
-		System::Void ReNew_ComPorts() {
+
+		Void ReNew_ComPorts() {
 			array<String^>^ serialPorts = nullptr;
 
 			serialPorts = IO::Ports::SerialPort::GetPortNames();
@@ -410,7 +423,7 @@ namespace BushWinApplication {
 					this->comBoxPortNames->Items->Add( port );
 		}
 	
-		System::Void comBoxPortNames_SelectedIndexChanged( System::Object^  sender, System::EventArgs^  e ) {
+		Void comBoxPortNames_SelectedIndexChanged( System::Object^  sender, System::EventArgs^  e ) {
 			//TODO add first start check and closing previous serial port thread
 		
 			FormGuiEnable( false );
@@ -418,7 +431,7 @@ namespace BushWinApplication {
 		}
 
 		Int32 fnOnTimerUpdate();
-		
+				
 };
 	
  }
