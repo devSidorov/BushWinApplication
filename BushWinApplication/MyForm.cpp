@@ -7,8 +7,9 @@
 using namespace System;
 using namespace System::Windows::Forms;
 
-BushData ITCdataBush;
-HANDLE hIObushThread = nullptr;
+BushData g_ITCdataBush;
+HANDLE g_hIObushThread = nullptr;
+INTHREADDATA g_dataToThread;
 
 [STAThreadAttribute]
 void Main( array<String^>^ args ) {
@@ -18,28 +19,46 @@ void Main( array<String^>^ args ) {
 	Application::Run( %form );
 }
 
-Int32 BushWinApplication::MyForm::BushIOThreadStart( String^ pPortName )
-{
-	INTHREADDATA dataToThread;
+Int32 BushWinApplication::MyForm::fnStartBushIOThread( String^ pPortName )
+{		
 	// types change for use low functions
 	msclr::interop::marshal_context context;
-	dataToThread.pPortName = context.marshal_as<const TCHAR*>( pPortName );
-	dataToThread.pBushData = &ITCdataBush;
+	g_ITCdataBush.ClearMemory();
+	g_dataToThread.ClearMemory();
+	_tcscpy_s<MAX_PATH>( g_dataToThread.acPortName, context.marshal_as<const TCHAR*>( pPortName ) );
+	g_dataToThread.pBushData = &g_ITCdataBush;
 	
-	hIObushThread = CreateThread( nullptr, NULL, fnMainIOBushThread, &dataToThread, NULL, nullptr );
-	System::Diagnostics::Debug::Assert( hIObushThread, "ERROR! IO thread hasn't started" ); //TODO add error check
-
+	g_hIObushThread = CreateThread( nullptr, NULL, fnMainIOBushThread, &g_dataToThread, NULL, nullptr );
+	if ( !g_hIObushThread )
+	{
+		System::Diagnostics::Trace::TraceWarning( "IO thread start fail" );
+		return ERROR_THREAD_NOT_IN_PROCESS;
+	}
+	
 	timerCheckData->Enabled = TRUE;
-	
 	return ERROR_SUCCESS;
 }
 
-Void BushWinApplication::MyForm::FormGuiEnable( bool isTRUE )
+Void BushWinApplication::MyForm::fnCloseOldBushIOThread()
+{
+	g_ITCdataBush.fnSetCommand( BUSH_SCRIPT::DISCONNECT );
+	DWORD fSuccess = WaitForSingleObject( g_hIObushThread, 5000 );
+	if ( fSuccess != WAIT_OBJECT_0 )
+	{
+		System::Diagnostics::Trace::TraceWarning( "IO thread normal finish failed!" );
+		TerminateThread( g_hIObushThread, ( DWORD )ERROR_HANDLE_NO_LONGER_VALID );
+		TerminateThread( g_ITCdataBush.fnGetDaughterHandle(), ( DWORD )ERROR_HANDLE_NO_LONGER_VALID );
+	}
+	
+	return;
+}
+
+Void BushWinApplication::MyForm::fnFormGuiEnable( bool isTRUE )
 {
 	comBoxPortNames->Enabled = isTRUE;
 }
 
-Void BushWinApplication::MyForm::InfoLabelsReset()
+Void BushWinApplication::MyForm::fnInfoLabelsReset()
 {
 	labelBushConnect->Text = L"";
 	labelBushDoor->Text = L"";
@@ -50,7 +69,7 @@ Void BushWinApplication::MyForm::InfoLabelsReset()
 
 Void BushWinApplication::MyForm::fnLockUnlockDoor()
 {
-	ITCdataBush.fnSetCommand( ( m_isLockLocked ) ? BUSH_SCRIPT::LOCK_UNLOCK : BUSH_SCRIPT::LOCK_LOCK );	
+	g_ITCdataBush.fnSetCommand( ( m_isLockLocked ) ? BUSH_SCRIPT::LOCK_UNLOCK : BUSH_SCRIPT::LOCK_LOCK );	
 	return;
 }
 
@@ -117,15 +136,15 @@ Int32 BushWinApplication::MyForm::fnOnTimerUpdate()
 	DATABUSH bushState;
 
 	//TODO check thread is runnig
-	if ( ITCdataBush.fnIsDataChanged() )
+	if ( g_ITCdataBush.fnIsDataChanged() )
 	{
-		ITCdataBush.fnGetData( bushState, bushStatus );
+		g_ITCdataBush.fnGetData( bushState, bushStatus );
 		
 		m_isDoorClosed = ( bushState.info[INFO_BYTE_BITS::DOOR] != 0 );
 		m_isLockLocked = ( bushState.info[INFO_BYTE_BITS::LOCK] != 0 );
 		m_isRelayOn = ( bushState.info[INFO_BYTE_BITS::RELAY] != 0 );
 		
-		InfoLabelsReset();
+		fnInfoLabelsReset();
 		fnStatusLabelUpdate( bushStatus );
 		fnTrayMenuUpdate( bushStatus, m_isLockLocked );
 		fnTrayIconUpdate( bushStatus );

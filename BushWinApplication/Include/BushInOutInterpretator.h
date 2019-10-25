@@ -49,8 +49,6 @@ public:
 		m_haEvHandler[EVENT_ARR::BUSH_INPUT] = fnGetEventDataFromBush();
 	}
 	~BushInOutInterpretator() { 
-		for ( int i = 0; i < EV_COUNT; i++ )
-			CloseHandle( m_haEvHandler[i] );
 		m_pDataITC = nullptr;
 	}
 
@@ -66,7 +64,7 @@ private:
 	DWORD fnGetHeatSens();
 	DWORD fnLockRelayScript( SCRIPT_STEP wStep, BOOL bOnMech, BOOL bIsLockScript );
 
-	DWORD fnCommandHandle();
+	DWORD fnCommandHandle( BOOL& IsCommandNotDissconnect );
 	DWORD fnInputBushHandle();
 	DWORD fnTimerWaitHandle();
 };
@@ -75,8 +73,13 @@ private:
 DWORD WINAPI fnMainIOBushThread( LPVOID lpParam );
 typedef struct InThreadData
 {
-	const TCHAR* pPortName;
+	TCHAR acPortName[MAX_PATH];
 	BushData* pBushData;
+
+	void ClearMemory() {
+		SecureZeroMemory( acPortName, sizeof( TCHAR )*MAX_PATH );
+		pBushData = nullptr;
+	}
 } INTHREADDATA, *LPINTHREADDATA;
 
 

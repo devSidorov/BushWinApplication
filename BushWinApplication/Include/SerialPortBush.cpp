@@ -37,10 +37,28 @@ DWORD SerialPortBush::fnConfigPort()
 
 DWORD SerialPortBush::fnStartReadThread()
 {
-m_hReadThreadHandle = CreateThread( NULL, 0, fnFromBushThread, this, 0, NULL );
-System::Diagnostics::Debug::Assert( m_hReadThreadHandle, "ERROR! Readint thread start FAIL!" );
+	m_hReadThreadHandle = CreateThread( NULL, 0, fnFromBushThread, this, 0, NULL );
+	if ( !m_hReadThreadHandle )
+	{
+		System::Diagnostics::Trace::TraceWarning( "Read input thread start fail!" );
+		return ERROR_THREAD_NOT_IN_PROCESS;
+	}
 
-return ERROR_SUCCESS;
+	return ERROR_SUCCESS;
+}
+
+DWORD SerialPortBush::fnStopReadThread()
+{
+	SetEvent( m_hReadThreadStop );
+
+	DWORD fSuccess = WaitForSingleObject( m_hReadThreadHandle, 2000 );
+	if ( fSuccess != WAIT_OBJECT_0 )
+	{
+		System::Diagnostics::Trace::TraceWarning( "Read input thread normal finish failed!" );
+		TerminateThread( m_hReadThreadHandle, ( DWORD )ERROR_HANDLE_NO_LONGER_VALID );
+	}
+
+	return fSuccess;
 }
 
 //Read input buffer, dont log firstbyte error because its signal of clean buffer
@@ -126,10 +144,18 @@ DWORD SerialPortBush::fnOpen()
 {
 	DWORD fSuccess = fnConnectPort();
 	if ( !fSuccess )
-		fSuccess = fnConfigPort();	
-	
-	fnStartReadThread();
+	{
+		fSuccess = fnConfigPort();		
+		fnStartReadThread();
+	}		
 
+	return fSuccess;
+}
+
+DWORD SerialPortBush::fnClose()
+{
+	DWORD fSuccess = fnStopReadThread();
+	
 	return fSuccess;
 }
 
@@ -160,6 +186,16 @@ DWORD SerialPortBush::fnReadFromITData()
 	fnParseInput( dataReaden.opcodeByte, dataReaden.infoByte );
 	
 	return dataReaden.opcodeByte;
+}
+
+BOOL const SerialPortBush::fnIsReadThreadNeed()
+{
+	BOOL result = TRUE;	
+
+	if ( WaitForSingleObject( m_hReadThreadStop, NULL ) == WAIT_OBJECT_0 )
+		result = FALSE;	
+
+	return result;
 }
 
 DWORD SerialPortBush::fnPutDataITC( const DATA_FROM_BUSH& dataToPut )

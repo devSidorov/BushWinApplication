@@ -131,6 +131,8 @@ namespace BushWinApplication {
 			// chBoxLockDoor
 			// 
 			this->chBoxLockDoor->AutoSize = true;
+			this->chBoxLockDoor->Checked = true;
+			this->chBoxLockDoor->CheckState = System::Windows::Forms::CheckState::Checked;
 			this->chBoxLockDoor->Location = System::Drawing::Point( 7, 23 );
 			this->chBoxLockDoor->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
 			this->chBoxLockDoor->Name = L"chBoxLockDoor";
@@ -142,6 +144,8 @@ namespace BushWinApplication {
 			// chBoxOverheat
 			// 
 			this->chBoxOverheat->AutoSize = true;
+			this->chBoxOverheat->Checked = true;
+			this->chBoxOverheat->CheckState = System::Windows::Forms::CheckState::Checked;
 			this->chBoxOverheat->Location = System::Drawing::Point( 7, 51 );
 			this->chBoxOverheat->Margin = System::Windows::Forms::Padding( 4, 3, 4, 3 );
 			this->chBoxOverheat->Name = L"chBoxOverheat";
@@ -345,7 +349,6 @@ namespace BushWinApplication {
 			this->Text = L"Настройка";
 			this->WindowState = System::Windows::Forms::FormWindowState::Minimized;
 			this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler( this, &MyForm::MyForm_FormClosing );
-			this->Load += gcnew System::EventHandler( this, &MyForm::MyForm_Load );
 			this->trayMenu->ResumeLayout( false );
 			this->groupBushInfo->ResumeLayout( false );
 			this->groupBushInfo->PerformLayout();
@@ -358,27 +361,37 @@ namespace BushWinApplication {
 #pragma endregion
 	private:
 		
-		Int32 BushIOThreadStart( String^ pPortName );
-		Void FormGuiEnable( bool isTRUE );
-
-		Void InfoLabelsReset();
+		Int32 fnStartBushIOThread( String^ pPortName );
+		Void fnCloseOldBushIOThread();
+		
+		Void fnInfoLabelsReset();
 		Void fnLockUnlockDoor();
 
+		Void ReNew_ComPorts() {
+			array<String^>^ serialPorts = nullptr;
+
+			comBoxPortNames->Items->Clear();
+			serialPorts = IO::Ports::SerialPort::GetPortNames();
+			if ( serialPorts )
+				for each( String^ port in serialPorts )
+					comBoxPortNames->Items->Add( port );
+		}
+		Void fnFormGuiEnable( bool isTRUE );
 		Void fnStatusLabelUpdate( Int16 bushStatus );
 		Void fnTrayMenuUpdate( Int16 bushStatus, Boolean bIsLockLocked );
 		Void fnTrayIconUpdate( Int16 bushStatus );
-				
-		Void MyForm_Load( System::Object^  sender, System::EventArgs^  e ) {
+		Void fnFormAppear() {
+			WindowState = FormWindowState::Normal;
+			TopMost = true;
+			TopMost = false;
+			return;
 		}
-		;
 
+		Int32 fnOnTimerUpdate();
+				
 		Void trayIcon_MouseDoubleClick( System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e ) {
-			//TODO update form
-			//TODO Exclude right click
-			this->WindowState = FormWindowState::Normal;
-			this->TopMost = true;
-			this->TopMost = false;
-			//this->Show();
+			fnFormAppear();
+			return;
 		}
 
 		Void MyForm_FormClosing( System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e ) {
@@ -391,13 +404,12 @@ namespace BushWinApplication {
 			return;
 		}
 
-
 		Void toolStripMenuItem1_Click( System::Object^  sender, System::EventArgs^  e ) {
 			Application::Exit();
 			return;
 		}
 		Void toolStripMenuItem2_Click( System::Object^  sender, System::EventArgs^  e ) {
-			this->WindowState = FormWindowState::Normal;
+			fnFormAppear();
 			return;
 		}
 		Void trayMenuItemDoor_Click( System::Object^  sender, System::EventArgs^  e ) {
@@ -412,26 +424,22 @@ namespace BushWinApplication {
 			ReNew_ComPorts();
 			return;
 		}
-
-
-		Void ReNew_ComPorts() {
-			array<String^>^ serialPorts = nullptr;
-
-			serialPorts = IO::Ports::SerialPort::GetPortNames();
-			if( serialPorts )
-				for each( String^ port in serialPorts )
-					this->comBoxPortNames->Items->Add( port );
-		}
-	
 		Void comBoxPortNames_SelectedIndexChanged( System::Object^  sender, System::EventArgs^  e ) {
-			//TODO add first start check and closing previous serial port thread
-		
-			FormGuiEnable( false );
-			Int32 fSuccess = BushIOThreadStart( comBoxPortNames->SelectedItem->ToString() );
-		}
+			static bool bNotFirstChoose = false;
+			
+			fnFormGuiEnable( false );
+			if ( bNotFirstChoose )
+			{
+				fnCloseOldBushIOThread();
+				fnInfoLabelsReset();
+				bNotFirstChoose = false;
+			}
+						
+			Int32 fSuccess = fnStartBushIOThread( comBoxPortNames->SelectedItem->ToString() );
+			if ( !fSuccess )
+				bNotFirstChoose = true;
 
-		Int32 fnOnTimerUpdate();
-				
-};
-	
- }
+			fnFormGuiEnable( true );
+			return;
+		}				
+}; }

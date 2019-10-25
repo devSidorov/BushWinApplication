@@ -105,7 +105,6 @@ const INT8 maxStack = 10;
 class SerialPortBush
 {
 private:
-	HANDLE m_hReadThreadHandle;
 	HANDLE m_hMutexReadData;
 	HANDLE m_hDataFromBush;
 	HANDLE m_hReadThreadStop; //TODO add flag pushing
@@ -118,6 +117,7 @@ protected:
 	DATABUSH m_bushState;
 	TCHAR m_acPortName[MAX_PATH];
 	HANDLE m_hComPort;
+	HANDLE m_hReadThreadHandle;
 
 public:
 	SerialPortBush() {
@@ -137,20 +137,29 @@ public:
 		fnSetPortName( pcPortName );
 	}
 	~SerialPortBush() { 
-		CloseHandle( m_hComPort );
+		fnReleaseHandles();
 	}
 
 private:
+	VOID fnReleaseHandles() {
+		CloseHandle( m_hReadThreadHandle );
+		CloseHandle( m_hMutexReadData );
+		CloseHandle( m_hDataFromBush );
+		CloseHandle( m_hReadThreadStop );
+		CloseHandle( m_hComPort );
+	}
+	
 	DWORD fnSetPortName( const TCHAR* pcPortName ) {
-		if ( pcPortName )
-			return _tcscpy_s<MAX_PATH>( m_acPortName, pcPortName );
+		if ( *pcPortName )
+			_tcscpy_s<MAX_PATH>( m_acPortName, pcPortName );
 
-		return EINVAL;
+		return ERROR_SUCCESS;
 	}
 
 	DWORD fnConnectPort();
 	DWORD fnConfigPort();
 	DWORD fnStartReadThread();
+	DWORD fnStopReadThread();
 	DWORD fnReadPort( BYTE& opcodeByte, BYTE& infoByte );
 	DWORD fnWritePort( const BYTE opcodeByte, const BYTE infoByte );
 	
@@ -166,6 +175,7 @@ private:
 
 public:
 	DWORD fnOpen();
+	DWORD fnClose();
 	DWORD fnWrite( const BYTE opcodeByte, const BYTE infoByte );
 	
 	DWORD fnReadToITData();
@@ -174,12 +184,8 @@ public:
 	HANDLE const fnGetEventDataFromBush() {
 		return m_hDataFromBush;
 	}
-	BOOL const fnIsReadThreadNeed()
-	{
-		if ( WaitForSingleObject( m_hReadThreadStop, NULL ) == WAIT_OBJECT_0 )
-			return FALSE;
-		return TRUE;
-	}	
+	BOOL const fnIsReadThreadNeed();
+	
 };
 
 DWORD WINAPI fnFromBushThread( LPVOID lpParam );

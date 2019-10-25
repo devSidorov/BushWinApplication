@@ -5,8 +5,10 @@
 DWORD BushInOutInterpretator::fnStart()
 {
 	DWORD fSuccess = fnOpen();
-	System::Diagnostics::Debug::Assert( !fSuccess, "ERROR! While openning port!" );
+	if ( fSuccess )
+		System::Diagnostics::Trace::TraceError( "Starting IO with bush failed" );
 	
+	m_pDataITC->SetDaughterHandle( m_hReadThreadHandle ); //for thread terminate if it stopped
 	fnConnectCheck();
 	return ERROR_SUCCESS;
 }
@@ -14,9 +16,9 @@ DWORD BushInOutInterpretator::fnStart()
 
 DWORD BushInOutInterpretator::fnFinish()
 {
-	//TODO add port close and memory clean if needed
-	//TODO add command send that thread is ended
-	return 0;
+	fnClose();
+
+	return ERROR_SUCCESS;
 }
 
 DWORD BushInOutInterpretator::fnDefaultWait()
@@ -119,7 +121,7 @@ BOOL BushInOutInterpretator::fnWaitForNextIO()
 	switch ( fSuccess )
 	{
 	case WAIT_OBJECT_0: //CommandEvent
-		fnCommandHandle();
+		fnCommandHandle( IsCommandNotDissconnect );
 		break;
 	case ( WAIT_OBJECT_0 + EVENT_ARR::BUSH_INPUT ): //Something from Bush
 		fnInputBushHandle();
@@ -138,7 +140,7 @@ BOOL BushInOutInterpretator::fnWaitForNextIO()
 	return IsCommandNotDissconnect;
 }
 
-DWORD BushInOutInterpretator::fnCommandHandle()
+DWORD BushInOutInterpretator::fnCommandHandle( BOOL& IsCommandNotDissconnect )
 {
 	BUSH_SCRIPT opcodeTaken = BUSH_SCRIPT::NO_SCRIPT;
 
@@ -154,7 +156,7 @@ DWORD BushInOutInterpretator::fnCommandHandle()
 						 ( ( opcodeTaken == BUSH_SCRIPT::LOCK_LOCK || opcodeTaken == BUSH_SCRIPT::LOCK_UNLOCK ) ? TRUE : FALSE ) );
 		break;		
 	case BUSH_SCRIPT::DISCONNECT:
-	//TODO add implementation	
+		IsCommandNotDissconnect = FALSE;
 		break;
 	default:
 		System::Diagnostics::Debug::WriteLine( System::String::Format( "WARNING! No implementation for such command! {0,2:X}", (WORD)opcodeTaken ) );
@@ -257,7 +259,10 @@ DWORD BushInOutInterpretator::fnTimerWaitHandle()
 
 DWORD WINAPI fnMainIOBushThread( LPVOID lpParam )
 {
-	BushInOutInterpretator BushConnect( ( ( LPINTHREADDATA )lpParam )->pBushData, ( ( LPINTHREADDATA )lpParam )->pPortName );
+	const TCHAR * pPortNameFromMainThread = ( ( LPINTHREADDATA )lpParam )->acPortName;
+	BushData* pBushDataITC =( ( LPINTHREADDATA )lpParam )->pBushData;
+		
+	BushInOutInterpretator BushConnect( pBushDataITC, pPortNameFromMainThread );
 	BushConnect.fnStart();
 
 	while ( BushConnect.fnWaitForNextIO() );
