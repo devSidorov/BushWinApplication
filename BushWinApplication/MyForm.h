@@ -358,13 +358,13 @@ namespace BushWinApplication {
 #pragma endregion
 	private:
 		Void fnStaticMemberInit() {
-			m_logFile = gcnew IO::FileStream( "..//Logs//bush_runtime.log", IO::FileMode::Append );
+			m_logFile = gcnew IO::FileStream( ".//Logs//bush_runtime.log", IO::FileMode::Append );
 
-			m_pIcoDisconnect = Form::Icon->ExtractAssociatedIcon( "..//resource//BushDisconnected.ico" );
-			m_pIcoOpen = Form::Icon->ExtractAssociatedIcon( "..//resource//BushOpened.ico" );
-			m_pIcoClose = Form::Icon->ExtractAssociatedIcon( "..//resource//BushClosed.ico" );
-			m_pIcoLock = Form::Icon->ExtractAssociatedIcon( "..//resource//BushLocked.ico" );
-			m_pIcoOverHeat = Form::Icon->ExtractAssociatedIcon( "..//resource//BushOverHeat.ico" );
+			m_pIcoDisconnect = Form::Icon->ExtractAssociatedIcon( ".//resource//BushDisconnected.ico" );
+			m_pIcoOpen = Form::Icon->ExtractAssociatedIcon( ".//resource//BushOpened.ico" );
+			m_pIcoClose = Form::Icon->ExtractAssociatedIcon( ".//resource//BushClosed.ico" );
+			m_pIcoLock = Form::Icon->ExtractAssociatedIcon( ".//resource//BushLocked.ico" );
+			m_pIcoOverHeat = Form::Icon->ExtractAssociatedIcon( ".//resource//BushOverHeat.ico" );
 		}
 		Void fnOnStart();
 		
