@@ -19,6 +19,57 @@ void Main( array<String^>^ args ) {
 	Application::Run( %form );
 }
 
+Void BushWinApplication::MyForm::fnOnStart()
+{
+	//adding log file
+	Diagnostics::Trace::Listeners->Add( gcnew System::Diagnostics::TextWriterTraceListener( m_logFile ) );
+	Diagnostics::Trace::AutoFlush = true;
+	Diagnostics::Trace::TraceInformation( "Application started" ); //TODO add start time
+
+
+	fnGetUserSettings();
+	//form update
+	Icon = m_pIcoDisconnect;
+	ShowIcon = true;
+	fnStatusLabelUpdate( 0 );
+	fnTrayIconUpdate( 0 );
+
+	return;
+}
+
+Void BushWinApplication::MyForm::fnGetUserSettings()
+{
+	m_ConfigXmlFile = gcnew Xml::XmlDocument;
+
+	Xml::XmlTextReader^ configFileRead = gcnew Xml::XmlTextReader( "appUserConfig" );
+	if ( configFileRead )
+		m_ConfigXmlFile->Load( configFileRead );
+	else //TODO add implementation if no settings file
+		;//m_ConfigXmlFile->Load( L"<?xml version=\"1.0\" encoding=\"utf - 8\"?>\n" +
+		//					   L"<settings showDoorState = \"true\" showOverHeat = \"true\" portName = \"\">\n" +
+		//					   L"</settings>" );
+
+	configFileRead->Close();
+	String^ compareString = "true";
+	chBoxLockDoor->Checked = compareString == m_ConfigXmlFile->DocumentElement->GetAttribute( "showDoorState" );
+	chBoxOverheat->Checked = compareString == m_ConfigXmlFile->DocumentElement->GetAttribute( "showOverHeat" );
+	compareString = m_ConfigXmlFile->DocumentElement->GetAttribute( "portName" );
+	//TODO add implementation for port name
+
+	return;
+}
+
+Void BushWinApplication::MyForm::fnSetUserSettings()
+{
+	m_ConfigXmlFile->DocumentElement->SetAttribute( "showDoorState", ( chBoxLockDoor->Checked == true ) ? "true" : "false" );
+	m_ConfigXmlFile->DocumentElement->SetAttribute( "showOverHeat", ( chBoxOverheat->Checked == true ) ? "true" : "false" );
+	//TODO add port name save
+
+	m_ConfigXmlFile->Save( "appUserConfig" );
+
+	return;
+}
+
 Int32 BushWinApplication::MyForm::fnStartBushIOThread( String^ pPortName )
 {		
 	// types change for use low functions
@@ -96,7 +147,7 @@ Void BushWinApplication::MyForm::fnStatusLabelUpdate( Int16 bushStatus )
 		labelBushConnect->Text = L"Превышена критическая температура!";
 		break;
 	default:
-		System::Diagnostics::Debug::WriteLine( "WARNING! No such bush status in StatusLabelUpdate" );
+		System::Diagnostics::Trace::TraceWarning( "fnStatusLabelUpdate: No such bush status in StatusLabelUpdate" );
 		break;
 	};
 }
@@ -125,7 +176,7 @@ Void BushWinApplication::MyForm::fnTrayMenuUpdate( Int16 bushStatus, Boolean bIs
 		trayMenuItemDoor->Visible = TRUE;
 		break;
 	default:
-		System::Diagnostics::Debug::WriteLine( "WARNING! No such bush status in trayMenuUpdate" );
+		System::Diagnostics::Trace::TraceWarning( "fnTrayMenuUpdate: No such bush status in trayMenuUpdate" );
 		break;
 	};
 }
@@ -135,7 +186,6 @@ Int32 BushWinApplication::MyForm::fnOnTimerUpdate()
 	BUSH_STATUS bushStatus;
 	DATABUSH bushState;
 
-	//TODO check thread is runnig
 	if ( g_ITCdataBush.fnIsDataChanged() )
 	{
 		g_ITCdataBush.fnGetData( bushState, bushStatus );
@@ -180,16 +230,11 @@ Void BushWinApplication::MyForm::fnTrayIconUpdate( Int16 bushStatus )
 			trayNotification->Icon = m_pIcoClose;
 		break;
 	case BUSH_STATUS::OVERHEATED:
-		trayNotification->Icon = m_pIcoOverHeat;
+		trayNotification->Icon = m_pIcoOverHeat; //TODO add changing every second tray notification
 		break;
 	default:
-		System::Diagnostics::Debug::WriteLine( "WARNING! No such bush status in fnTrayIconUpdate" );
+		System::Diagnostics::Trace::TraceWarning( "fnTrayIconUpdate: No such bush status in fnTrayIconUpdate" );
 		break;
 	};
 }
 
-
-//func timer	
-//	check thread is runnig
-//	check if info changed
-//		get info to form

@@ -17,16 +17,9 @@ namespace BushWinApplication {
 	public:
 		MyForm( void )
 		{
-			InitializeComponent();
-		
-			Icon = m_pIcoDisconnect;
-			ShowIcon = true;
-
-			fnStatusLabelUpdate( 0 );
-			fnTrayIconUpdate( 0 );
-
-			Diagnostics::Trace::Listeners->Add( gcnew System::Diagnostics::TextWriterTraceListener( m_logFile ) );
-			Diagnostics::Trace::AutoFlush = true;
+			InitializeComponent();			
+			fnStaticMemberInit();
+			fnOnStart();						
 		}
 
 	protected:
@@ -64,24 +57,28 @@ namespace BushWinApplication {
 		System::Windows::Forms::Timer^  timerCheckData;
 		System::Windows::Forms::GroupBox^  groupBoxTrayConfig;
 		System::ComponentModel::IContainer^  components;
-	
+
 	private:
 		/// <summary>
-		/// Required designer variable.
-
+		/// Required programmer variables
 		/// </summary>
-
 		Boolean m_isDoorClosed;
 		Boolean m_isLockLocked;
 		Boolean m_isRelayOn;
 
-		Drawing::Icon^ m_pIcoDisconnect = Form::Icon->ExtractAssociatedIcon(  "..//resource//BushDisconnected.ico" );
-		Drawing::Icon^ m_pIcoOpen = Form::Icon->ExtractAssociatedIcon( "..//resource//BushOpened.ico" );
-		Drawing::Icon^ m_pIcoClose = Form::Icon->ExtractAssociatedIcon( "..//resource//BushClosed.ico" );
-		Drawing::Icon^ m_pIcoLock = Form::Icon->ExtractAssociatedIcon( "..//resource//BushLocked.ico" );
-		Drawing::Icon^ m_pIcoOverHeat = Form::Icon->ExtractAssociatedIcon( "..//resource//BushOverHeat.ico" );
+		Drawing::Icon^ m_pIcoDisconnect;
+		Drawing::Icon^ m_pIcoOpen;
+		Drawing::Icon^ m_pIcoClose;
+		Drawing::Icon^ m_pIcoLock;
+		Drawing::Icon^ m_pIcoOverHeat;
 
-		IO::FileStream^ m_logFile = gcnew IO::FileStream( "..//Logs//bush_runtime.log", IO::FileMode::Append );
+		IO::FileStream^ m_logFile;
+		Xml::XmlDocument^ m_ConfigXmlFile;
+	
+	private:
+		/// <summary>
+		/// Required designer variable
+		/// </summary>
 
 #pragma region Windows Form Designer generated code
 		/// <summary>
@@ -360,6 +357,19 @@ namespace BushWinApplication {
 		}
 #pragma endregion
 	private:
+		Void fnStaticMemberInit() {
+			m_logFile = gcnew IO::FileStream( "..//Logs//bush_runtime.log", IO::FileMode::Append );
+
+			m_pIcoDisconnect = Form::Icon->ExtractAssociatedIcon( "..//resource//BushDisconnected.ico" );
+			m_pIcoOpen = Form::Icon->ExtractAssociatedIcon( "..//resource//BushOpened.ico" );
+			m_pIcoClose = Form::Icon->ExtractAssociatedIcon( "..//resource//BushClosed.ico" );
+			m_pIcoLock = Form::Icon->ExtractAssociatedIcon( "..//resource//BushLocked.ico" );
+			m_pIcoOverHeat = Form::Icon->ExtractAssociatedIcon( "..//resource//BushOverHeat.ico" );
+		}
+		Void fnOnStart();
+		
+		Void fnGetUserSettings();
+		Void fnSetUserSettings();
 		
 		Int32 fnStartBushIOThread( String^ pPortName );
 		Void fnCloseOldBushIOThread();
@@ -373,9 +383,13 @@ namespace BushWinApplication {
 			comBoxPortNames->Items->Clear();
 			serialPorts = IO::Ports::SerialPort::GetPortNames();
 			if ( serialPorts )
+			{
+				//TODO add sort list
 				for each( String^ port in serialPorts )
 					comBoxPortNames->Items->Add( port );
+			}				
 		}
+
 		Void fnFormGuiEnable( bool isTRUE );
 		Void fnStatusLabelUpdate( Int16 bushStatus );
 		Void fnTrayMenuUpdate( Int16 bushStatus, Boolean bIsLockLocked );
@@ -400,7 +414,8 @@ namespace BushWinApplication {
 				e->Cancel = true;
 				this->WindowState = FormWindowState::Minimized;
 			}
-
+			else
+				fnSetUserSettings();
 			return;
 		}
 
