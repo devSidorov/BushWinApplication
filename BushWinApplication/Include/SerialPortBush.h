@@ -100,7 +100,8 @@ struct DATA_FROM_BUSH {
 
 const BYTE FIRST_BYTE_VALUE = 0xAA;
 const BYTE INFO_BYTES = 2;
-const INT8 maxStack = 10;
+const INT8 MAX_STACK = 10;
+const INT8 TEMPERATURE_STAB = 41;
 
 class SerialPortBush
 {
@@ -108,7 +109,7 @@ private:
 	HANDLE m_hMutexReadData;
 	HANDLE m_hDataFromBush;
 	HANDLE m_hReadThreadStop; //TODO add flag pushing
-	DATA_FROM_BUSH m_aDataReadITC[maxStack]; // TODO rewrite class to protect this data
+	DATA_FROM_BUSH m_aDataReadITC[MAX_STACK]; // TODO rewrite class to protect this data
 	INT8 m_dCurrent;
 	INT8 m_dLastRead;
 
@@ -125,7 +126,7 @@ public:
 		m_hMutexReadData = CreateMutex( nullptr, FALSE, nullptr );
 		m_hDataFromBush = CreateEvent( nullptr, TRUE, FALSE, nullptr );
 		m_hReadThreadStop = CreateEvent( nullptr, TRUE, FALSE, nullptr );
-		SecureZeroMemory( m_aDataReadITC, sizeof( DATA_FROM_BUSH ) * maxStack );
+		SecureZeroMemory( m_aDataReadITC, sizeof( DATA_FROM_BUSH ) * MAX_STACK );
 		m_dCurrent = m_dLastRead = -1;
 		
 		m_bushStatus = BUSH_STATUS::NO_STATUS;
@@ -166,6 +167,7 @@ private:
 	DWORD fnPutDataITC( const DATA_FROM_BUSH & dataToPut );
 	DWORD const fnGetDataITC( DATA_FROM_BUSH & dataGet );
 
+	INT8 fnTemperatureCalc( const BYTE infoByte );
 	DWORD fnParseInput( BYTE opcodeByte, BYTE infoByte );
 	DWORD fnParseStateByte( BYTE infoByte );
 	DWORD fnParseChangeByte( BYTE infoByte );

@@ -203,8 +203,8 @@ DWORD SerialPortBush::fnPutDataITC( const DATA_FROM_BUSH& dataToPut )
 	DWORD fSuccess = WaitForSingleObject( m_hMutexReadData, INFINITE );
 	System::Diagnostics::Debug::Assert( fSuccess == WAIT_OBJECT_0 || fSuccess == WAIT_ABANDONED, System::String::Format( "ERROR! Mutex wait wrong return! {0:X}", fSuccess ) );
 
-	if ( ( m_dCurrent + 1 ) % maxStack != m_dLastRead ) //check if catching read index - rewrite last getten data
-		m_dCurrent = ( m_dCurrent + 1 ) % maxStack;
+	if ( ( m_dCurrent + 1 ) % MAX_STACK != m_dLastRead ) //check if catching read index - rewrite last getten data
+		m_dCurrent = ( m_dCurrent + 1 ) % MAX_STACK;
 		
 	m_aDataReadITC[m_dCurrent] = dataToPut;
 	
@@ -219,7 +219,7 @@ DWORD const SerialPortBush::fnGetDataITC( DATA_FROM_BUSH& dataGet )
 	DWORD fSuccess = WaitForSingleObject( m_hMutexReadData, INFINITE );
 	System::Diagnostics::Debug::Assert( fSuccess == WAIT_OBJECT_0 || fSuccess == WAIT_ABANDONED, System::String::Format( "ERROR! Mutex wait wrong return! {0:X}", fSuccess ) );
 
-	if ( ++m_dLastRead == maxStack ) //loop going through stack
+	if ( ++m_dLastRead == MAX_STACK ) //loop going through stack
 		m_dLastRead = 0;
 
 	dataGet = m_aDataReadITC[m_dLastRead];
