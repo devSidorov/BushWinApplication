@@ -24,7 +24,7 @@ Void BushWinApplication::MyForm::fnOnStart()
 	//adding log file
 	Diagnostics::Trace::Listeners->Add( gcnew System::Diagnostics::TextWriterTraceListener( m_logFile ) );
 	Diagnostics::Trace::AutoFlush = true;
-	Diagnostics::Trace::TraceInformation( "Application started" ); //TODO add start time
+	Diagnostics::Trace::TraceInformation( String::Format ( "Application started: {0}", DateTime::Now ) ); 
 
 
 	fnGetUserSettings();
@@ -237,4 +237,16 @@ Void BushWinApplication::MyForm::fnTrayIconUpdate( Int16 bushStatus )
 		break;
 	};
 }
+
+//TODO add IPC
+//TODO add temperature proc
+//TODO add temperature check
+//TODO notification blink
+//TODO change icon then port change
+//TODO check window change when port drop down
+//TODO auto start
+//TODO msi installer
+
+//TODO add implementation for notification checkbox
+//TODO add to trace information: port name and IO proc thread start stop
 

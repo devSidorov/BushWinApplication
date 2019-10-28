@@ -54,23 +54,23 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\resource\BushClosed.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="..\resource\BushDisconnected.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="..\resource\BushLocked.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="..\resource\BushOpened.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="..\resource\BushOverHeat.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
+    <Xml Include="appUserConfig" />
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="appUserConfig" />
+    <Image Include="resource\BushClosed.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resource\BushDisconnected.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resource\BushLocked.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resource\BushOpened.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resource\BushOverHeat.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

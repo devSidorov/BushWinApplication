@@ -6,8 +6,11 @@ DWORD BushInOutInterpretator::fnStart()
 {
 	DWORD fSuccess = fnOpen();
 	if ( fSuccess )
-		System::Diagnostics::Trace::TraceError( "Starting IO with bush failed" );
-	
+	{
+		System::Diagnostics::Trace::TraceWarning( "Starting IO with bush failed" );
+		return fSuccess;
+	}
+
 	m_pDataITC->SetDaughterHandle( m_hReadThreadHandle ); //for thread terminate if it stopped
 	fnConnectCheck();
 	return ERROR_SUCCESS;
@@ -104,7 +107,7 @@ DWORD BushInOutInterpretator::fnLockRelayScript( SCRIPT_STEP wStep = SCRIPT_STEP
 		else; //waiting for another opcode, do nothing and wait for opcode or timer to send repeat of command
 	}
 	else
-		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Script lock-relay, unknown step -{0:X}", ( DWORD )wStep ) );
+		System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnWaitForNextIO: Unpredicted behavior! Script lock-relay, unknown step -{0:X}", ( DWORD )wStep ) );
 
 	return ERROR_SUCCESS;
 }
@@ -134,7 +137,7 @@ BOOL BushInOutInterpretator::fnWaitForNextIO()
 	case WAIT_FAILED:
 	default:
 		//TODO add processing of unpredicted events with threads
-		System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Wait for events returned {0:X} error {0:X}", fSuccess, GetLastError() ) );
+		System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnWaitForNextIO: Unpredicted behavior! Wait for events returned {0:X} error {0:X}", fSuccess, GetLastError() ) );
 	}
 
 	return IsCommandNotDissconnect;
@@ -159,7 +162,7 @@ DWORD BushInOutInterpretator::fnCommandHandle( BOOL& IsCommandNotDissconnect )
 		IsCommandNotDissconnect = FALSE;
 		break;
 	default:
-		System::Diagnostics::Debug::WriteLine( System::String::Format( "WARNING! No implementation for such command! {0,2:X}", (WORD)opcodeTaken ) );
+		System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnCommandHandle: Unpredicted behavior! No implementation for such command! {0,2:X}", (WORD)opcodeTaken ) );
 		break;
 	}
 
@@ -176,7 +179,7 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 		switch ( m_script )
 		{
 		case BUSH_SCRIPT::NO_SCRIPT:
-			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Input processing, no script, returned opcode -{0:X}", returnedOpcode ) );
+			System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnInputBushHandle: Unpredicted behavior! No script, returned opcode {0:X}", returnedOpcode ) );
 			break;
 		case BUSH_SCRIPT::INIT:
 			if ( m_waitForOpcode == OPCODE::CONNECT_FINE )
@@ -184,7 +187,7 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 			else if ( m_waitForOpcode == OPCODE::STATE_INFO )
 				fnGetHeatSens(); // get temp sensor before sending info to Getter				
 			else 
-				System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Must not be here script -{0:X}", ( DWORD )m_script ) );
+				System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnInputBushHandle: Unpredicted behavior! Init script, unwaited OPCODE {0:X}", returnedOpcode ) );
 			break;
 		case BUSH_SCRIPT::LOCK_LOCK:
 		case BUSH_SCRIPT::LOCK_UNLOCK:
@@ -195,14 +198,14 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 			else if ( m_waitForOpcode == OPCODE::STATE_CHANGE )
 				fnLockRelayScript( SCRIPT_STEP::THIRD_STEP );
 			else 
-				System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Input processing, LOCK/UNLOKC script, unwaited OPCODE {0:X}", returnedOpcode ) );
+				System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnInputBushHandle: Unpredicted behavior! LOCK/UNLOKC script, unwaited OPCODE {0:X}", returnedOpcode ) );
 			break;
 		case BUSH_SCRIPT::GET_TEMPRETURE:
-			m_pDataITC->fnSetData( m_bushState, m_bushStatus ); //TODO add temp check to set status overheat
+			m_pDataITC->fnSetData( m_bushState, m_bushStatus );
 			fnDefaultWait();
 			break;		
 		default:
-			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "ERROR! Check, no processing for this script name!" ) );
+			System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnInputBushHandle: Unpredicted behavior! Opcode from bush equal to waited: {0:X}", ( DWORD )m_script ) );
 		}
 	}
 	else
@@ -218,7 +221,7 @@ DWORD BushInOutInterpretator::fnInputBushHandle()
 		else if ( m_waitForOpcode )
 			; //waiting for another opcode, do nothing and wait for opcode or timer to send repeat of command 
 		else
-			System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Input processing, no wait for opcode, not predicted opcode {0:X}", returnedOpcode ) );
+			System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnInputBushHandle: Unpredicted behavior! No wait for opcode, not predicted opcode {0:X}", returnedOpcode ) );
 	}
 	
 	return ERROR_SUCCESS;
@@ -246,7 +249,7 @@ DWORD BushInOutInterpretator::fnTimerWaitHandle()
 				fnGetHeatSens();
 				break;
 			default:
-				System::Diagnostics::Debug::Assert( FALSE, System::String::Format( "Unpredicted behavior! Timeout processing, unwaited opcode -{0:X}", ( DWORD )m_waitForOpcode ) );
+				System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnTimerWaitHandle: Unpredicted behavior! Timeout processing, unwaited opcode -{0:X}", ( DWORD )m_waitForOpcode ) );
 			}			
 			m_bRepeatErr = TRUE;
 		}
@@ -263,7 +266,11 @@ DWORD WINAPI fnMainIOBushThread( LPVOID lpParam )
 	BushData* pBushDataITC =( ( LPINTHREADDATA )lpParam )->pBushData;
 		
 	BushInOutInterpretator BushConnect( pBushDataITC, pPortNameFromMainThread );
-	BushConnect.fnStart();
+	DWORD fSuccess = BushConnect.fnStart();
+
+	// some problems with port, read bysh thread hasnt started, end this thread 
+	if ( fSuccess )
+		return ERROR_PORT_UNREACHABLE;
 
 	while ( BushConnect.fnWaitForNextIO() );
 

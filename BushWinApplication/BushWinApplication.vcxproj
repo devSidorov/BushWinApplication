@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{40BAEC3C-C6FF-44C9-BDA0-905CD2ACCA52}</ProjectGuid>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <Keyword>ManagedCProj</Keyword>
     <RootNamespace>BushWinApplication</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
@@ -171,26 +171,16 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\resource\BushClosed.ico">
-      <DeploymentContent>true</DeploymentContent>
-    </Image>
-    <Image Include="..\resource\BushDisconnected.ico">
-      <DeploymentContent>true</DeploymentContent>
-    </Image>
-    <Image Include="..\resource\BushLocked.ico">
-      <DeploymentContent>true</DeploymentContent>
-    </Image>
-    <Image Include="..\resource\BushOpened.ico">
-      <DeploymentContent>true</DeploymentContent>
-    </Image>
-    <Image Include="..\resource\BushOverHeat.ico">
-      <DeploymentContent>true</DeploymentContent>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
     <Xml Include="appUserConfig">
       <DeploymentContent>true</DeploymentContent>
     </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resource\BushClosed.ico" />
+    <Image Include="resource\BushDisconnected.ico" />
+    <Image Include="resource\BushLocked.ico" />
+    <Image Include="resource\BushOpened.ico" />
+    <Image Include="resource\BushOverHeat.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -102,6 +102,7 @@ const BYTE FIRST_BYTE_VALUE = 0xAA;
 const BYTE INFO_BYTES = 2;
 const INT8 MAX_STACK = 10;
 const INT8 TEMPERATURE_STAB = 41;
+const INT8 MIN_OVERHEAT_TEMP = 32;
 
 class SerialPortBush
 {
@@ -167,7 +168,7 @@ private:
 	DWORD fnPutDataITC( const DATA_FROM_BUSH & dataToPut );
 	DWORD const fnGetDataITC( DATA_FROM_BUSH & dataGet );
 
-	INT8 fnTemperatureCalc( const BYTE infoByte );
+	INT8 fnAverageTempCalc( const BYTE infoByte );
 	DWORD fnParseInput( BYTE opcodeByte, BYTE infoByte );
 	DWORD fnParseStateByte( BYTE infoByte );
 	DWORD fnParseChangeByte( BYTE infoByte );

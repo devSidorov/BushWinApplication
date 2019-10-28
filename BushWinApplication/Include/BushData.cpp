@@ -11,8 +11,13 @@ BOOL BushData::fnIsDataChanged() const
 DWORD BushData::fnSetData( const DATABUSH& dataToSave )
 {
 	DWORD fSuccess = WaitForSingleObject( m_hInfoMutex, INFINITE ); // TODO add options for time waiting error
-	System::Diagnostics::Debug::Assert( fSuccess == WAIT_OBJECT_0 || fSuccess == WAIT_ABANDONED, System::String::Format( "ERROR! Mutex wait wrong return! {0:X}", fSuccess ) );
 	
+	if ( fSuccess != WAIT_OBJECT_0 && fSuccess != WAIT_ABANDONED )
+	{
+		System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnSetData: Mutex wait wrong return! {0:X}", fSuccess ) );
+		return ERROR_DATA_NOT_ACCEPTED;
+	}
+
 	m_bushState = dataToSave;
 	SetEvent( m_hInfoChanged );
 
@@ -24,7 +29,12 @@ DWORD BushData::fnSetData( const DATABUSH& dataToSave )
 DWORD BushData::fnSetData( const BUSH_STATUS & statusToSave )
 {
 	DWORD fSuccess = WaitForSingleObject( m_hInfoMutex, INFINITE ); // TODO add options for time waiting error
-	System::Diagnostics::Debug::Assert( fSuccess == WAIT_OBJECT_0 || fSuccess == WAIT_ABANDONED, System::String::Format( "ERROR! Mutex wait wrong return! {0:X}", fSuccess ) );
+	
+	if ( fSuccess != WAIT_OBJECT_0 && fSuccess != WAIT_ABANDONED )
+	{
+		System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnSetData: Mutex wait wrong return! {0:X}", fSuccess ) );
+		return ERROR_DATA_NOT_ACCEPTED;
+	}
 
 	if ( m_status != statusToSave )
 	{
@@ -40,7 +50,12 @@ DWORD BushData::fnSetData( const BUSH_STATUS & statusToSave )
 DWORD BushData::fnSetData( const DATABUSH& dataToSave, const BUSH_STATUS& statusToSave )
 {
 	DWORD fSuccess = WaitForSingleObject( m_hInfoMutex, INFINITE ); // TODO add options for time waiting error
-	System::Diagnostics::Debug::Assert( fSuccess == WAIT_OBJECT_0 || fSuccess == WAIT_ABANDONED, System::String::Format( "ERROR! Mutex wait wrong return! {0:X}", fSuccess ) );
+	
+	if ( fSuccess != WAIT_OBJECT_0 && fSuccess != WAIT_ABANDONED )
+	{
+		System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnSetData: Mutex wait wrong return! {0:X}", fSuccess ) );
+		return ERROR_DATA_NOT_ACCEPTED;
+	}
 
 	m_status = statusToSave;
 	m_bushState = dataToSave;
@@ -54,7 +69,12 @@ DWORD BushData::fnSetData( const DATABUSH& dataToSave, const BUSH_STATUS& status
 DWORD BushData::fnGetData( DATABUSH& dataReturn, BUSH_STATUS& statusReturn ) const
 {
 	DWORD fSuccess = WaitForSingleObject( m_hInfoMutex, INFINITE ); // TODO add options for time waiting error
-	System::Diagnostics::Debug::Assert( fSuccess == WAIT_OBJECT_0 || fSuccess == WAIT_ABANDONED, System::String::Format( "ERROR! Mutex wait wrong return! {0:X}", fSuccess ) );
+	
+	if ( fSuccess != WAIT_OBJECT_0 && fSuccess != WAIT_ABANDONED )
+	{
+		System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnGetData: Mutex wait wrong return! {0:X}", fSuccess ) );
+		return ERROR_DATA_NOT_ACCEPTED;
+	}
 
 	dataReturn = m_bushState;
 	statusReturn = m_status;
@@ -69,7 +89,12 @@ DWORD BushData::fnGetData( DATABUSH& dataReturn, BUSH_STATUS& statusReturn ) con
 DWORD BushData::fnSetCommand( const BUSH_SCRIPT & command )
 {
 	DWORD fSuccess = WaitForSingleObject( m_hCommandMutex, INFINITE ); // TODO add options for time waiting error
-	System::Diagnostics::Debug::Assert( fSuccess == WAIT_OBJECT_0 || fSuccess == WAIT_ABANDONED, System::String::Format( "ERROR! Mutex wait wrong return! {0:X}", fSuccess ) );
+	
+	if ( fSuccess != WAIT_OBJECT_0 && fSuccess != WAIT_ABANDONED )
+	{
+		System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnSetCommand: Mutex wait wrong return! {0:X}", fSuccess ) );
+		return ERROR_DATA_NOT_ACCEPTED;
+	}
 
 	m_command = command;
 	SetEvent( m_hCommandEvent );
@@ -81,7 +106,12 @@ DWORD BushData::fnSetCommand( const BUSH_SCRIPT & command )
 DWORD BushData::fnGetCommand( BUSH_SCRIPT & command ) const
 {
 	DWORD fSuccess = WaitForSingleObject( m_hCommandMutex, INFINITE ); // TODO add options for time waiting error
-	System::Diagnostics::Debug::Assert( fSuccess == WAIT_OBJECT_0 || fSuccess == WAIT_ABANDONED, System::String::Format( "ERROR! Mutex wait wrong return! {0:X}", fSuccess ) );
+	
+	if ( fSuccess != WAIT_OBJECT_0 && fSuccess != WAIT_ABANDONED )
+	{
+		System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnGetCommand: Mutex wait wrong return! {0:X}", fSuccess ) );
+		return ERROR_DATA_NOT_ACCEPTED;
+	}
 
 	command = m_command;
 	ResetEvent( m_hCommandEvent );

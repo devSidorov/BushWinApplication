@@ -415,7 +415,10 @@ namespace BushWinApplication {
 				this->WindowState = FormWindowState::Minimized;
 			}
 			else
+			{
 				fnSetUserSettings();
+				Diagnostics::Trace::TraceInformation( String::Format( "Application finished: {0}\n++++++++++++++++++++++\n", DateTime::Now ) );
+			}
 			return;
 		}
 
