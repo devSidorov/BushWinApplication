@@ -70,4 +70,7 @@
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <Xml Include="appUserConfig" />
+  </ItemGroup>
 </Project>
