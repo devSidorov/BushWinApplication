@@ -72,8 +72,9 @@ namespace BushWinApplication {
 		Drawing::Icon^ m_pIcoLock;
 		Drawing::Icon^ m_pIcoOverHeat;
 
-		IO::FileStream^ m_logFile;
-		Xml::XmlDocument^ m_ConfigXmlFile;
+		IO::FileStream^ m_pLogFile;
+		Xml::XmlDocument^ m_pConfigXmlFile;
+		String^ m_pXmlConfigFilePath;
 	
 	private:
 		/// <summary>
@@ -358,8 +359,6 @@ namespace BushWinApplication {
 #pragma endregion
 	private:
 		Void fnStaticMemberInit() {
-			m_logFile = gcnew IO::FileStream( ".//Logs//bush_runtime.log", IO::FileMode::Append );
-
 			m_pIcoDisconnect = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushDisconnected.ico" );
 			m_pIcoOpen = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushOpened.ico" );
 			m_pIcoClose = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushClosed.ico" );
@@ -368,7 +367,7 @@ namespace BushWinApplication {
 		}
 		Void fnOnStart();
 		
-		Void fnGetUserSettings();
+		Void fnGetUserSettings( String^ pPathLocalData );
 		Void fnSetUserSettings();
 		
 		Int32 fnStartBushIOThread( String^ pPortName );

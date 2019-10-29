@@ -21,39 +21,55 @@ void Main( array<String^>^ args ) {
 
 Void BushWinApplication::MyForm::fnOnStart()
 {
-	//adding log file
-	Diagnostics::Trace::Listeners->Add( gcnew System::Diagnostics::TextWriterTraceListener( m_logFile ) );
-	Diagnostics::Trace::AutoFlush = true;
-	Diagnostics::Trace::TraceInformation( String::Format ( "Application started: {0}", DateTime::Now ) ); 
-
-
-	fnGetUserSettings();
-	//form update
 	Icon = m_pIcoDisconnect;
 	ShowIcon = true;
 	fnStatusLabelUpdate( 0 );
 	fnTrayIconUpdate( 0 );
+	
+	String^ pPathLocalData = Environment::GetFolderPath( Environment::SpecialFolder::CommonApplicationData );
+	
+	if ( String::IsNullOrEmpty( pPathLocalData ) )
+	{
+		System::Diagnostics::Trace::TraceError( "fnOnStart: Can't get path to CommonApplicationData!" );
+		return;
+	}
 
+	pPathLocalData += L"\\EdelveisBush";
+	if ( ! IO::Directory::Exists( pPathLocalData ) )
+		IO::Directory::CreateDirectory( pPathLocalData );
+	pPathLocalData += L"\\";
+	
+	//adding log file
+	String^ pLogFileName = gcnew String( L"bush_runtime.log" );
+	if ( !IO::File::Exists( pPathLocalData + pLogFileName ) )
+		m_pLogFile = IO::File::Create( pPathLocalData + pLogFileName );
+	else
+		m_pLogFile = gcnew IO::FileStream( pPathLocalData + pLogFileName, IO::FileMode::Append );
+	
+	Diagnostics::Trace::Listeners->Add( gcnew System::Diagnostics::TextWriterTraceListener( m_pLogFile ) );
+	Diagnostics::Trace::AutoFlush = true;
+	Diagnostics::Trace::TraceInformation( String::Format ( "Application started: {0}", DateTime::Now ) ); 
+	
+	fnGetUserSettings( pPathLocalData );
+	
 	return;
 }
 
-Void BushWinApplication::MyForm::fnGetUserSettings()
+Void BushWinApplication::MyForm::fnGetUserSettings( String^ pPathLocalData )
 {
-	m_ConfigXmlFile = gcnew Xml::XmlDocument;
+	String^ pXmlConfigFileName = gcnew String( L"appUserConfig" );
+	m_pConfigXmlFile = gcnew Xml::XmlDocument;
+	m_pXmlConfigFilePath = pPathLocalData + pXmlConfigFileName;
 
-	Xml::XmlTextReader^ configFileRead = gcnew Xml::XmlTextReader( "appUserConfig" );
-	if ( configFileRead )
-		m_ConfigXmlFile->Load( configFileRead );
-	else //TODO add implementation if no settings file
-		;//m_ConfigXmlFile->Load( L"<?xml version=\"1.0\" encoding=\"utf - 8\"?>\n" +
-		//					   L"<settings showDoorState = \"true\" showOverHeat = \"true\" portName = \"\">\n" +
-		//					   L"</settings>" );
+	//if file exist take settings from it, if not from default file
+	Xml::XmlTextReader^ configFileRead = gcnew Xml::XmlTextReader( ( IO::File::Exists( pPathLocalData + pXmlConfigFileName ) ) ? m_pXmlConfigFilePath : pXmlConfigFileName );
+	m_pConfigXmlFile->Load( configFileRead );
+	configFileRead->Close();	
 
-	configFileRead->Close();
 	String^ compareString = "true";
-	chBoxLockDoor->Checked = compareString == m_ConfigXmlFile->DocumentElement->GetAttribute( "showDoorState" );
-	chBoxOverheat->Checked = compareString == m_ConfigXmlFile->DocumentElement->GetAttribute( "showOverHeat" );
-	compareString = m_ConfigXmlFile->DocumentElement->GetAttribute( "portName" );
+	chBoxLockDoor->Checked = compareString == m_pConfigXmlFile->DocumentElement->GetAttribute( "showDoorState" );
+	chBoxOverheat->Checked = compareString == m_pConfigXmlFile->DocumentElement->GetAttribute( "showOverHeat" );
+	compareString = m_pConfigXmlFile->DocumentElement->GetAttribute( "portName" );
 	//TODO add implementation for port name
 
 	return;
@@ -61,11 +77,11 @@ Void BushWinApplication::MyForm::fnGetUserSettings()
 
 Void BushWinApplication::MyForm::fnSetUserSettings()
 {
-	m_ConfigXmlFile->DocumentElement->SetAttribute( "showDoorState", ( chBoxLockDoor->Checked == true ) ? "true" : "false" );
-	m_ConfigXmlFile->DocumentElement->SetAttribute( "showOverHeat", ( chBoxOverheat->Checked == true ) ? "true" : "false" );
+	m_pConfigXmlFile->DocumentElement->SetAttribute( "showDoorState", ( chBoxLockDoor->Checked == true ) ? "true" : "false" );
+	m_pConfigXmlFile->DocumentElement->SetAttribute( "showOverHeat", ( chBoxOverheat->Checked == true ) ? "true" : "false" );
 	//TODO add port name save
 
-	m_ConfigXmlFile->Save( "appUserConfig" );
+	m_pConfigXmlFile->Save( m_pXmlConfigFilePath );
 
 	return;
 }

@@ -24,7 +24,7 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <Keyword>ManagedCProj</Keyword>
     <RootNamespace>BushWinApplication</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -53,7 +53,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <CLRSupport>true</CLRSupport>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -176,11 +176,21 @@
     </Xml>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="resource\BushClosed.ico" />
-    <Image Include="resource\BushDisconnected.ico" />
-    <Image Include="resource\BushLocked.ico" />
-    <Image Include="resource\BushOpened.ico" />
-    <Image Include="resource\BushOverHeat.ico" />
+    <Image Include="resource\BushClosed.ico">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="resource\BushDisconnected.ico">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="resource\BushLocked.ico">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="resource\BushOpened.ico">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="resource\BushOverHeat.ico">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

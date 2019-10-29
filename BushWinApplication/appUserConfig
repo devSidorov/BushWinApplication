@@ -1,3 +1,3 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<settings showDoorState="false" showOverHeat="true" portName="">
+<settings showDoorState="true" showOverHeat="true" portName="">
 </settings>
