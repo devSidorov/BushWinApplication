@@ -316,7 +316,7 @@ namespace BushWinApplication {
 			// 
 			this->groupBoxTrayConfig->Controls->Add( this->chBoxLockDoor );
 			this->groupBoxTrayConfig->Controls->Add( this->chBoxOverheat );
-			this->groupBoxTrayConfig->Location = System::Drawing::Point( 12, 167 );
+			this->groupBoxTrayConfig->Location = System::Drawing::Point( 12, 180 );
 			this->groupBoxTrayConfig->Name = L"groupBoxTrayConfig";
 			this->groupBoxTrayConfig->Size = System::Drawing::Size( 410, 81 );
 			this->groupBoxTrayConfig->TabIndex = 8;
@@ -327,7 +327,7 @@ namespace BushWinApplication {
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF( 9, 18 );
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size( 434, 260 );
+			this->ClientSize = System::Drawing::Size( 434, 273 );
 			this->Controls->Add( this->groupBoxTrayConfig );
 			this->Controls->Add( this->groupBushInfo );
 			this->Controls->Add( this->comBoxPortNames );
@@ -360,11 +360,11 @@ namespace BushWinApplication {
 		Void fnStaticMemberInit() {
 			m_logFile = gcnew IO::FileStream( ".//Logs//bush_runtime.log", IO::FileMode::Append );
 
-			m_pIcoDisconnect = Form::Icon->ExtractAssociatedIcon( ".//resource//BushDisconnected.ico" );
-			m_pIcoOpen = Form::Icon->ExtractAssociatedIcon( ".//resource//BushOpened.ico" );
-			m_pIcoClose = Form::Icon->ExtractAssociatedIcon( ".//resource//BushClosed.ico" );
-			m_pIcoLock = Form::Icon->ExtractAssociatedIcon( ".//resource//BushLocked.ico" );
-			m_pIcoOverHeat = Form::Icon->ExtractAssociatedIcon( ".//resource//BushOverHeat.ico" );
+			m_pIcoDisconnect = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushDisconnected.ico" );
+			m_pIcoOpen = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushOpened.ico" );
+			m_pIcoClose = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushClosed.ico" );
+			m_pIcoLock = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushLocked.ico" );
+			m_pIcoOverHeat = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushOverHeat.ico" );
 		}
 		Void fnOnStart();
 		
