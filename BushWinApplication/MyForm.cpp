@@ -19,7 +19,7 @@ void Main( array<String^>^ args ) {
 	Application::Run( %form );
 }
 
-Void BushWinApplication::MyForm::fnOnStart()
+short BushWinApplication::MyForm::fnOnStart()
 {
 	Icon = m_pIcoDisconnect;
 	ShowIcon = true;
@@ -31,7 +31,7 @@ Void BushWinApplication::MyForm::fnOnStart()
 	if ( String::IsNullOrEmpty( pPathLocalData ) )
 	{
 		System::Diagnostics::Trace::TraceError( "fnOnStart: Can't get path to CommonApplicationData!" );
-		return;
+		return -1;
 	}
 
 	pPathLocalData += L"\\EdelveisBush";
@@ -48,14 +48,14 @@ Void BushWinApplication::MyForm::fnOnStart()
 	
 	Diagnostics::Trace::Listeners->Add( gcnew System::Diagnostics::TextWriterTraceListener( m_pLogFile ) );
 	Diagnostics::Trace::AutoFlush = true;
-	Diagnostics::Trace::TraceInformation( String::Format ( "Application started: {0}", DateTime::Now ) ); 
+	Diagnostics::Trace::TraceInformation( String::Format ( "+++++++++| Application started: {0} |+++++++++", DateTime::Now ) ); 
 	
 	fnGetUserSettings( pPathLocalData );
 	
-	return;
+	return 0;
 }
 
-Void BushWinApplication::MyForm::fnGetUserSettings( String^ pPathLocalData )
+short BushWinApplication::MyForm::fnGetUserSettings( String^ pPathLocalData )
 {
 	String^ pXmlConfigFileName = gcnew String( L"appUserConfig" );
 	m_pConfigXmlFile = gcnew Xml::XmlDocument;
@@ -72,10 +72,10 @@ Void BushWinApplication::MyForm::fnGetUserSettings( String^ pPathLocalData )
 	compareString = m_pConfigXmlFile->DocumentElement->GetAttribute( "portName" );
 	//TODO add implementation for port name
 
-	return;
+	return 0;
 }
 
-Void BushWinApplication::MyForm::fnSetUserSettings()
+short BushWinApplication::MyForm::fnSetUserSettings()
 {
 	m_pConfigXmlFile->DocumentElement->SetAttribute( "showDoorState", ( chBoxLockDoor->Checked == true ) ? "true" : "false" );
 	m_pConfigXmlFile->DocumentElement->SetAttribute( "showOverHeat", ( chBoxOverheat->Checked == true ) ? "true" : "false" );
@@ -83,10 +83,30 @@ Void BushWinApplication::MyForm::fnSetUserSettings()
 
 	m_pConfigXmlFile->Save( m_pXmlConfigFilePath );
 
-	return;
+	return 0;
 }
 
-Int32 BushWinApplication::MyForm::fnStartBushIOThread( String^ pPortName )
+short BushWinApplication::MyForm::fnConnectToPort( String ^ pPortName )
+{
+	static bool bNotFirstChoose = false;
+
+	fnFormGuiEnable( false );
+	if ( bNotFirstChoose )
+	{
+		fnCloseOldBushIOThread();
+		fnInfoLabelsReset();
+		bNotFirstChoose = false;
+	}
+
+	Int32 fSuccess = fnStartBushIOThread( pPortName );
+	if ( !fSuccess )
+		bNotFirstChoose = true;
+
+	fnFormGuiEnable( true );
+	return 0;
+}
+
+short BushWinApplication::MyForm::fnStartBushIOThread( String^ pPortName )
 {		
 	// types change for use low functions
 	msclr::interop::marshal_context context;
@@ -103,44 +123,61 @@ Int32 BushWinApplication::MyForm::fnStartBushIOThread( String^ pPortName )
 	}
 	
 	timerCheckData->Enabled = TRUE;
-	return ERROR_SUCCESS;
+	return 0;
 }
 
-Void BushWinApplication::MyForm::fnCloseOldBushIOThread()
+short BushWinApplication::MyForm::fnCloseOldBushIOThread()
 {
 	g_ITCdataBush.fnSetCommand( BUSH_SCRIPT::DISCONNECT );
 	DWORD fSuccess = WaitForSingleObject( g_hIObushThread, 5000 );
 	if ( fSuccess != WAIT_OBJECT_0 )
 	{
 		System::Diagnostics::Trace::TraceWarning( "IO thread normal finish failed!" );
-		TerminateThread( g_hIObushThread, ( DWORD )ERROR_HANDLE_NO_LONGER_VALID );
-		TerminateThread( g_ITCdataBush.fnGetDaughterHandle(), ( DWORD )ERROR_HANDLE_NO_LONGER_VALID );
+		TerminateThread( g_hIObushThread, ( short )ERROR_HANDLE_NO_LONGER_VALID );
+		TerminateThread( g_ITCdataBush.fnGetDaughterHandle(), ( short )ERROR_HANDLE_NO_LONGER_VALID );
 	}
 	
-	return;
+	return 0;
 }
 
-Void BushWinApplication::MyForm::fnFormGuiEnable( bool isTRUE )
+short BushWinApplication::MyForm::fnFormGuiEnable( bool isTRUE )
 {
 	comBoxPortNames->Enabled = isTRUE;
+	return 0;
 }
 
-Void BushWinApplication::MyForm::fnInfoLabelsReset()
+short BushWinApplication::MyForm::fnInfoLabelsReset()
 {
 	labelBushConnect->Text = L"";
 	labelBushDoor->Text = L"";
 	labelBushLock->Text = L"";
 	labelBushSens->Text = L"";
 	labelBushRelay->Text = L"";	
+
+	return 0;
 }
 
-Void BushWinApplication::MyForm::fnLockUnlockDoor()
+short BushWinApplication::MyForm::fnLockUnlockDoor()
 {
 	g_ITCdataBush.fnSetCommand( ( m_isLockLocked ) ? BUSH_SCRIPT::LOCK_UNLOCK : BUSH_SCRIPT::LOCK_LOCK );	
-	return;
+	return 0;
 }
 
-Void BushWinApplication::MyForm::fnStatusLabelUpdate( Int16 bushStatus )
+short BushWinApplication::MyForm::ReNew_ComPorts()
+{
+	array<String^>^ serialPorts = nullptr;
+
+	comBoxPortNames->Items->Clear();
+	serialPorts = IO::Ports::SerialPort::GetPortNames();
+	if ( serialPorts )
+	{
+		Array::Sort( serialPorts );
+		comBoxPortNames->Items->AddRange( serialPorts );
+	}
+	return 0;
+}
+
+short BushWinApplication::MyForm::fnStatusLabelUpdate( Int16 bushStatus )
 {
 	switch ( bushStatus )
 	{		
@@ -166,15 +203,16 @@ Void BushWinApplication::MyForm::fnStatusLabelUpdate( Int16 bushStatus )
 		System::Diagnostics::Trace::TraceWarning( "fnStatusLabelUpdate: No such bush status in StatusLabelUpdate" );
 		break;
 	};
+	return 0;
 }
 
-Void BushWinApplication::MyForm::fnTrayMenuUpdate( Int16 bushStatus, Boolean bIsLockLocked )
+short BushWinApplication::MyForm::fnTrayMenuUpdate( Int16 bushStatus, Boolean bIsLockLocked )
 {
 	if ( !m_isDoorClosed )
 	{
 		trayMenuItemDoor->Text = "";
 		trayMenuItemDoor->Visible = FALSE;
-		return;
+		return 0;
 	}
 	
 	switch ( bushStatus )
@@ -195,39 +233,10 @@ Void BushWinApplication::MyForm::fnTrayMenuUpdate( Int16 bushStatus, Boolean bIs
 		System::Diagnostics::Trace::TraceWarning( "fnTrayMenuUpdate: No such bush status in trayMenuUpdate" );
 		break;
 	};
+	return 0;
 }
 
-Int32 BushWinApplication::MyForm::fnOnTimerUpdate()
-{
-	BUSH_STATUS bushStatus;
-	DATABUSH bushState;
-
-	if ( g_ITCdataBush.fnIsDataChanged() )
-	{
-		g_ITCdataBush.fnGetData( bushState, bushStatus );
-		
-		m_isDoorClosed = ( bushState.info[INFO_BYTE_BITS::DOOR] != 0 );
-		m_isLockLocked = ( bushState.info[INFO_BYTE_BITS::LOCK] != 0 );
-		m_isRelayOn = ( bushState.info[INFO_BYTE_BITS::RELAY] != 0 );
-		
-		fnInfoLabelsReset();
-		fnStatusLabelUpdate( bushStatus );
-		fnTrayMenuUpdate( bushStatus, m_isLockLocked );
-		fnTrayIconUpdate( bushStatus );
-
-		if ( bushStatus != NO_STATUS && bushStatus != DISCONNECTED )
-		{
-			labelBushDoor->Text = m_isDoorClosed ? L"Закрыта" : L"Открыта";
-			labelBushLock->Text = m_isLockLocked ? L"Закрыт" : L"Открыт";
-			labelBushSens->Text = bushState.averageTemp.ToString();
-			labelBushRelay->Text = m_isRelayOn ? L"Включено" : L"Выключено";
-		}
-	}
-
-	return ERROR_SUCCESS;
-}
-
-Void BushWinApplication::MyForm::fnTrayIconUpdate( Int16 bushStatus )
+short BushWinApplication::MyForm::fnTrayIconUpdate( Int16 bushStatus )
 {
 	switch ( bushStatus )
 	{
@@ -252,16 +261,51 @@ Void BushWinApplication::MyForm::fnTrayIconUpdate( Int16 bushStatus )
 		System::Diagnostics::Trace::TraceWarning( "fnTrayIconUpdate: No such bush status in fnTrayIconUpdate" );
 		break;
 	};
+	return 0;
+}
+
+short BushWinApplication::MyForm::fnFormAppear()
+{
+	WindowState = FormWindowState::Normal;
+	TopMost = true;
+	TopMost = false;
+	return 0;
+}
+
+short BushWinApplication::MyForm::fnOnTimerUpdate()
+{
+	BUSH_STATUS bushStatus;
+	DATABUSH bushState;
+
+	if ( g_ITCdataBush.fnIsDataChanged() )
+	{
+		g_ITCdataBush.fnGetData( bushState, bushStatus );
+
+		m_isDoorClosed = ( bushState.info[INFO_BYTE_BITS::DOOR] != 0 );
+		m_isLockLocked = ( bushState.info[INFO_BYTE_BITS::LOCK] != 0 );
+		m_isRelayOn = ( bushState.info[INFO_BYTE_BITS::RELAY] != 0 );
+
+		fnInfoLabelsReset();
+		fnStatusLabelUpdate( bushStatus );
+		fnTrayMenuUpdate( bushStatus, m_isLockLocked );
+		fnTrayIconUpdate( bushStatus );
+
+		if ( bushStatus != NO_STATUS && bushStatus != DISCONNECTED )
+		{
+			labelBushDoor->Text = m_isDoorClosed ? L"Закрыта" : L"Открыта";
+			labelBushLock->Text = m_isLockLocked ? L"Закрыт" : L"Открыт";
+			labelBushSens->Text = bushState.averageTemp.ToString();
+			labelBushRelay->Text = m_isRelayOn ? L"Включено" : L"Выключено";
+		}
+	}
+
+	return 0;
 }
 
 //TODO add IPC
-//TODO add temperature proc
-//TODO add temperature check
 //TODO notification blink
 //TODO change icon then port change
 //TODO check window change when port drop down
-//TODO auto start
-//TODO msi installer
 
 //TODO add implementation for notification checkbox
 //TODO add to trace information: port name and IO proc thread start stop

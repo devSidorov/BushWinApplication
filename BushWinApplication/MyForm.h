@@ -161,7 +161,7 @@ namespace BushWinApplication {
 			this->comBoxPortNames->TabIndex = 4;
 			this->comBoxPortNames->Text = L"Не выбран";
 			this->comBoxPortNames->DropDown += gcnew System::EventHandler( this, &MyForm::comBoxPortNames_DropDown );
-			this->comBoxPortNames->SelectedIndexChanged += gcnew System::EventHandler( this, &MyForm::comBoxPortNames_SelectedIndexChanged );
+			this->comBoxPortNames->SelectionChangeCommitted += gcnew System::EventHandler( this, &MyForm::comBoxPortNames_SelectionChangeCommitted );
 			// 
 			// trayNotification
 			// 
@@ -342,7 +342,6 @@ namespace BushWinApplication {
 			this->MinimizeBox = false;
 			this->Name = L"MyForm";
 			this->RightToLeft = System::Windows::Forms::RightToLeft::No;
-			this->ShowIcon = false;
 			this->ShowInTaskbar = false;
 			this->Text = L"Настройка";
 			this->WindowState = System::Windows::Forms::FormWindowState::Minimized;
@@ -358,6 +357,25 @@ namespace BushWinApplication {
 		}
 #pragma endregion
 	private:
+		short fnOnStart();		
+		
+		short fnGetUserSettings( String^ pPathLocalData );
+		short fnSetUserSettings();
+		
+		short fnConnectToPort( String^ pPortName );
+		short fnStartBushIOThread( String^ pPortName );
+		short fnCloseOldBushIOThread();
+		
+		short fnInfoLabelsReset();
+		short fnLockUnlockDoor();
+		short ReNew_ComPorts();
+		short fnFormGuiEnable( bool isTRUE );
+		short fnStatusLabelUpdate( Int16 bushStatus );
+		short fnTrayMenuUpdate( Int16 bushStatus, Boolean bIsLockLocked );
+		short fnTrayIconUpdate( Int16 bushStatus );
+		short fnFormAppear();
+		short fnOnTimerUpdate();
+		
 		Void fnStaticMemberInit() {
 			m_pIcoDisconnect = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushDisconnected.ico" );
 			m_pIcoOpen = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushOpened.ico" );
@@ -365,58 +383,20 @@ namespace BushWinApplication {
 			m_pIcoLock = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushLocked.ico" );
 			m_pIcoOverHeat = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushOverHeat.ico" );
 		}
-		Void fnOnStart();
-		
-		Void fnGetUserSettings( String^ pPathLocalData );
-		Void fnSetUserSettings();
-		
-		Int32 fnStartBushIOThread( String^ pPortName );
-		Void fnCloseOldBushIOThread();
-		
-		Void fnInfoLabelsReset();
-		Void fnLockUnlockDoor();
 
-		Void ReNew_ComPorts() {
-			array<String^>^ serialPorts = nullptr;
-
-			comBoxPortNames->Items->Clear();
-			serialPorts = IO::Ports::SerialPort::GetPortNames();
-			if ( serialPorts )
-			{
-				//TODO add sort list
-				for each( String^ port in serialPorts )
-					comBoxPortNames->Items->Add( port );
-			}				
-		}
-
-		Void fnFormGuiEnable( bool isTRUE );
-		Void fnStatusLabelUpdate( Int16 bushStatus );
-		Void fnTrayMenuUpdate( Int16 bushStatus, Boolean bIsLockLocked );
-		Void fnTrayIconUpdate( Int16 bushStatus );
-		Void fnFormAppear() {
-			WindowState = FormWindowState::Normal;
-			TopMost = true;
-			TopMost = false;
-			return;
-		}
-
-		Int32 fnOnTimerUpdate();
-				
 		Void trayIcon_MouseDoubleClick( System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e ) {
 			fnFormAppear();
 			return;
 		}
 
 		Void MyForm_FormClosing( System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e ) {
-			if ( e->CloseReason == CloseReason::UserClosing )
-			{
+			if ( e->CloseReason == CloseReason::UserClosing ) 			{
 				e->Cancel = true;
-				this->WindowState = FormWindowState::Minimized;
+				WindowState = FormWindowState::Minimized;
 			}
-			else
-			{
+			else {
 				fnSetUserSettings();
-				Diagnostics::Trace::TraceInformation( String::Format( "Application finished: {0}\n++++++++++++++++++++++\n", DateTime::Now ) );
+				Diagnostics::Trace::TraceInformation( String::Format( "+++++++++| Application finished: {0} |++++++++++", DateTime::Now ) );
 			}
 			return;
 		}
@@ -440,23 +420,10 @@ namespace BushWinApplication {
 		Void comBoxPortNames_DropDown( System::Object^  sender, System::EventArgs^  e ) {
 			ReNew_ComPorts();
 			return;
-		}
-		Void comBoxPortNames_SelectedIndexChanged( System::Object^  sender, System::EventArgs^  e ) {
-			static bool bNotFirstChoose = false;
-			
-			fnFormGuiEnable( false );
-			if ( bNotFirstChoose )
-			{
-				fnCloseOldBushIOThread();
-				fnInfoLabelsReset();
-				bNotFirstChoose = false;
-			}
-						
-			Int32 fSuccess = fnStartBushIOThread( comBoxPortNames->SelectedItem->ToString() );
-			if ( !fSuccess )
-				bNotFirstChoose = true;
-
-			fnFormGuiEnable( true );
+		}	
+		Void comBoxPortNames_SelectionChangeCommitted( System::Object^  sender, System::EventArgs^  e ) {
+			fnConnectToPort( comBoxPortNames->SelectedItem->ToString() );
 			return;
-		}				
-}; }
+		}
+    };
+}
