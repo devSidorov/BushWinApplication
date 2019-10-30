@@ -57,7 +57,7 @@ DWORD SerialPortBush::fnStopReadThread()
 {
 	SetEvent( m_hReadThreadStop );
 
-	DWORD fSuccess = WaitForSingleObject( m_hReadThreadHandle, 2000 );
+	DWORD fSuccess = WaitForSingleObject( m_hReadThreadHandle, M_WAIT_TIME_DEFAULT );
 	if ( fSuccess != WAIT_OBJECT_0 )
 	{
 		System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnStopReadThread: Stop read port thread fail! {0:X}", fSuccess ) );
@@ -401,7 +401,7 @@ DWORD WINAPI fnFromBushThread( LPVOID lpParam )
 		pBush->fnReadToITData();
 	} while ( pBush->fnIsReadThreadNeed() );
 
-	System::Diagnostics::Trace::TraceInformation( "fnFromBushThread: Read bush thread finished" );
+	System::Diagnostics::Trace::TraceInformation( "fnFromBushThread: Read bush thread finished normally" );
 	return ERROR_SUCCESS;
 }
 

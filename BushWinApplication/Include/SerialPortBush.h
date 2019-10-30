@@ -103,6 +103,7 @@ const BYTE INFO_BYTES = 2;
 const INT8 MAX_STACK = 10;
 const INT8 TEMPERATURE_STAB = 41;
 const INT8 MIN_OVERHEAT_TEMP = 32;
+const WORD M_WAIT_TIME_DEFAULT = 1000;
 
 class SerialPortBush
 {

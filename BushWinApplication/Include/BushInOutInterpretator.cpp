@@ -262,9 +262,9 @@ DWORD BushInOutInterpretator::fnTimerWaitHandle()
 
 DWORD WINAPI fnMainIOBushThread( LPVOID lpParam )
 {
+	System::Diagnostics::Trace::TraceInformation( "fnMainIOBushThread: IO background thread started" );
 	const TCHAR * pPortNameFromMainThread = ( ( LPINTHREADDATA )lpParam )->acPortName;
-	BushData* pBushDataITC =( ( LPINTHREADDATA )lpParam )->pBushData;
-		
+	BushData* pBushDataITC =( ( LPINTHREADDATA )lpParam )->pBushData;		
 	BushInOutInterpretator BushConnect( pBushDataITC, pPortNameFromMainThread );
 	DWORD fSuccess = BushConnect.fnStart();
 
@@ -275,5 +275,6 @@ DWORD WINAPI fnMainIOBushThread( LPVOID lpParam )
 	while ( BushConnect.fnWaitForNextIO() );
 
 	BushConnect.fnFinish();
+	System::Diagnostics::Trace::TraceInformation( "fnMainIOBushThread: IO background thread finished normally" );
 	return ERROR_SUCCESS;
 }

@@ -75,6 +75,7 @@ namespace BushWinApplication {
 		IO::FileStream^ m_pLogFile;
 		Xml::XmlDocument^ m_pConfigXmlFile;
 		String^ m_pXmlConfigFilePath;
+		String^ m_pSuccessPortConnectedName;
 	
 	private:
 		/// <summary>
@@ -154,12 +155,12 @@ namespace BushWinApplication {
 			// 
 			// comBoxPortNames
 			// 
+			this->comBoxPortNames->DropDownStyle = System::Windows::Forms::ComboBoxStyle::DropDownList;
 			this->comBoxPortNames->FormattingEnabled = true;
 			this->comBoxPortNames->Location = System::Drawing::Point( 73, 18 );
 			this->comBoxPortNames->Name = L"comBoxPortNames";
 			this->comBoxPortNames->Size = System::Drawing::Size( 288, 26 );
 			this->comBoxPortNames->TabIndex = 4;
-			this->comBoxPortNames->Text = L"Не выбран";
 			this->comBoxPortNames->DropDown += gcnew System::EventHandler( this, &MyForm::comBoxPortNames_DropDown );
 			this->comBoxPortNames->SelectionChangeCommitted += gcnew System::EventHandler( this, &MyForm::comBoxPortNames_SelectionChangeCommitted );
 			// 
@@ -196,7 +197,7 @@ namespace BushWinApplication {
 			// 
 			// trayMenuItemExit
 			// 
-			this->trayMenuItemExit->BackColor = System::Drawing::SystemColors::ControlDarkDark;
+			this->trayMenuItemExit->BackColor = System::Drawing::SystemColors::Control;
 			this->trayMenuItemExit->Name = L"trayMenuItemExit";
 			this->trayMenuItemExit->Size = System::Drawing::Size( 133, 22 );
 			this->trayMenuItemExit->Text = L"Выход";
@@ -362,13 +363,13 @@ namespace BushWinApplication {
 		short fnGetUserSettings( String^ pPathLocalData );
 		short fnSetUserSettings();
 		
-		short fnConnectToPort( String^ pPortName );
+		short fnReconnectToPort( String^ pPortName );
 		short fnStartBushIOThread( String^ pPortName );
 		short fnCloseOldBushIOThread();
 		
 		short fnInfoLabelsReset();
 		short fnLockUnlockDoor();
-		short ReNew_ComPorts();
+		short fnReNewComPorts();
 		short fnFormGuiEnable( bool isTRUE );
 		short fnStatusLabelUpdate( Int16 bushStatus );
 		short fnTrayMenuUpdate( Int16 bushStatus, Boolean bIsLockLocked );
@@ -418,12 +419,14 @@ namespace BushWinApplication {
 			return;
 		}
 		Void comBoxPortNames_DropDown( System::Object^  sender, System::EventArgs^  e ) {
-			ReNew_ComPorts();
+			fnReNewComPorts();
 			return;
 		}	
 		Void comBoxPortNames_SelectionChangeCommitted( System::Object^  sender, System::EventArgs^  e ) {
-			fnConnectToPort( comBoxPortNames->SelectedItem->ToString() );
+			fnReconnectToPort( comBoxPortNames->SelectedItem->ToString() );
+			fnStatusLabelUpdate( 0 );
+			fnTrayIconUpdate( 0 );
 			return;
 		}
-    };
+};
 }

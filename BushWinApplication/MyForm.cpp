@@ -21,6 +21,9 @@ void Main( array<String^>^ args ) {
 
 short BushWinApplication::MyForm::fnOnStart()
 {
+	m_pXmlConfigFilePath = nullptr;
+	m_pSuccessPortConnectedName = L"";
+	
 	Icon = m_pIcoDisconnect;
 	ShowIcon = true;
 	fnStatusLabelUpdate( 0 );
@@ -66,27 +69,40 @@ short BushWinApplication::MyForm::fnGetUserSettings( String^ pPathLocalData )
 	m_pConfigXmlFile->Load( configFileRead );
 	configFileRead->Close();	
 
+	//TODO add try catch for reading xml file
 	String^ compareString = "true";
 	chBoxLockDoor->Checked = compareString == m_pConfigXmlFile->DocumentElement->GetAttribute( "showDoorState" );
 	chBoxOverheat->Checked = compareString == m_pConfigXmlFile->DocumentElement->GetAttribute( "showOverHeat" );
 	compareString = m_pConfigXmlFile->DocumentElement->GetAttribute( "portName" );
-	//TODO add implementation for port name
+	
+	//if port from user setting is in available ports then connect to it
+	if ( !String::IsNullOrEmpty( compareString ) )
+	{
+		fnReNewComPorts();
+		comBoxPortNames->SelectedIndex = comBoxPortNames->FindStringExact( compareString );
+		if ( comBoxPortNames->SelectedIndex != -1 )
+			fnReconnectToPort( compareString );		
+	}		
 
 	return 0;
 }
 
 short BushWinApplication::MyForm::fnSetUserSettings()
 {
+	//TODO add try catch of xml is broken
 	m_pConfigXmlFile->DocumentElement->SetAttribute( "showDoorState", ( chBoxLockDoor->Checked == true ) ? "true" : "false" );
 	m_pConfigXmlFile->DocumentElement->SetAttribute( "showOverHeat", ( chBoxOverheat->Checked == true ) ? "true" : "false" );
+	m_pConfigXmlFile->DocumentElement->SetAttribute( "portName", m_pSuccessPortConnectedName );
 	//TODO add port name save
 
-	m_pConfigXmlFile->Save( m_pXmlConfigFilePath );
+	//check if path to app data exists
+	if ( m_pXmlConfigFilePath )
+		m_pConfigXmlFile->Save( m_pXmlConfigFilePath );
 
 	return 0;
 }
 
-short BushWinApplication::MyForm::fnConnectToPort( String ^ pPortName )
+short BushWinApplication::MyForm::fnReconnectToPort( String ^ pPortName )
 {
 	static bool bNotFirstChoose = false;
 
@@ -129,11 +145,12 @@ short BushWinApplication::MyForm::fnStartBushIOThread( String^ pPortName )
 short BushWinApplication::MyForm::fnCloseOldBushIOThread()
 {
 	g_ITCdataBush.fnSetCommand( BUSH_SCRIPT::DISCONNECT );
-	DWORD fSuccess = WaitForSingleObject( g_hIObushThread, 5000 );
+	DWORD fSuccess = WaitForSingleObject( g_hIObushThread, M_WAIT_TIME_DEFAULT * 2 ); // two times read bush thread have to finish
 	if ( fSuccess != WAIT_OBJECT_0 )
 	{
-		System::Diagnostics::Trace::TraceWarning( "IO thread normal finish failed!" );
+		System::Diagnostics::Trace::TraceWarning( "fnCloseOldBushIOThread: IO background thread normal finish failed!" );
 		TerminateThread( g_hIObushThread, ( short )ERROR_HANDLE_NO_LONGER_VALID );
+		System::Diagnostics::Trace::TraceWarning( "fnCloseOldBushIOThread: Read bush thread normal finish failed!" );
 		TerminateThread( g_ITCdataBush.fnGetDaughterHandle(), ( short )ERROR_HANDLE_NO_LONGER_VALID );
 	}
 	
@@ -163,7 +180,7 @@ short BushWinApplication::MyForm::fnLockUnlockDoor()
 	return 0;
 }
 
-short BushWinApplication::MyForm::ReNew_ComPorts()
+short BushWinApplication::MyForm::fnReNewComPorts()
 {
 	array<String^>^ serialPorts = nullptr;
 
@@ -238,24 +255,31 @@ short BushWinApplication::MyForm::fnTrayMenuUpdate( Int16 bushStatus, Boolean bI
 
 short BushWinApplication::MyForm::fnTrayIconUpdate( Int16 bushStatus )
 {
+	
 	switch ( bushStatus )
 	{
-	case BUSH_STATUS::NO_STATUS:
-	case BUSH_STATUS::DISCONNECTED:
-		trayNotification->Icon = m_pIcoDisconnect;
-		break;
+	case BUSH_STATUS::OVERHEATED:
+		if ( chBoxOverheat->Checked )
+		{
+			trayNotification->Icon = m_pIcoOverHeat;
+			break;
+		}
 	case BUSH_STATUS::CONNECTED:
 	case BUSH_STATUS::HEAT_SENS_ERR:
 	case BUSH_STATUS::BUSH_BRISH_ERR:
-		if ( !m_isDoorClosed )
-			trayNotification->Icon = m_pIcoOpen;
-		else if ( m_isLockLocked )
-			trayNotification->Icon = m_pIcoLock;
-		else
-			trayNotification->Icon = m_pIcoClose;
-		break;
-	case BUSH_STATUS::OVERHEATED:
-		trayNotification->Icon = m_pIcoOverHeat; //TODO add changing every second tray notification
+		if ( chBoxLockDoor->Checked )
+		{
+			if ( !m_isDoorClosed )
+				trayNotification->Icon = m_pIcoOpen;
+			else if ( m_isLockLocked )
+				trayNotification->Icon = m_pIcoLock;
+			else
+				trayNotification->Icon = m_pIcoClose;
+			break;
+		}		
+	case BUSH_STATUS::NO_STATUS:
+	case BUSH_STATUS::DISCONNECTED:
+		trayNotification->Icon = m_pIcoDisconnect;
 		break;
 	default:
 		System::Diagnostics::Trace::TraceWarning( "fnTrayIconUpdate: No such bush status in fnTrayIconUpdate" );
@@ -296,17 +320,17 @@ short BushWinApplication::MyForm::fnOnTimerUpdate()
 			labelBushLock->Text = m_isLockLocked ? L"Закрыт" : L"Открыт";
 			labelBushSens->Text = bushState.averageTemp.ToString();
 			labelBushRelay->Text = m_isRelayOn ? L"Включено" : L"Выключено";
-		}
+			if ( comBoxPortNames->SelectedItem )
+				m_pSuccessPortConnectedName = comBoxPortNames->SelectedItem->ToString();
+		}		
 	}
 
 	return 0;
 }
 
 //TODO add IPC
-//TODO notification blink
-//TODO change icon then port change
-//TODO check window change when port drop down
 
+//TODO check window change when port drop down
 //TODO add implementation for notification checkbox
-//TODO add to trace information: port name and IO proc thread start stop
+
 
