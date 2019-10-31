@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+const short UNSELECTED_INDEX = -1;
+
 namespace BushWinApplication {
 
 	using namespace System;
@@ -65,6 +67,8 @@ namespace BushWinApplication {
 		Boolean m_isDoorClosed;
 		Boolean m_isLockLocked;
 		Boolean m_isRelayOn;
+		int m_lastBushStatus;
+		short m_lastSelectedComBoxIndex;
 
 		Drawing::Icon^ m_pIcoDisconnect;
 		Drawing::Icon^ m_pIcoOpen;
@@ -139,6 +143,7 @@ namespace BushWinApplication {
 			this->chBoxLockDoor->TabIndex = 2;
 			this->chBoxLockDoor->Text = L"Состояние двери и замка";
 			this->chBoxLockDoor->UseVisualStyleBackColor = true;
+			this->chBoxLockDoor->CheckedChanged += gcnew System::EventHandler( this, &MyForm::chBoxLockDoor_CheckedChanged );
 			// 
 			// chBoxOverheat
 			// 
@@ -152,6 +157,7 @@ namespace BushWinApplication {
 			this->chBoxOverheat->TabIndex = 3;
 			this->chBoxOverheat->Text = L"Превышение рабочей температуры";
 			this->chBoxOverheat->UseVisualStyleBackColor = true;
+			this->chBoxOverheat->CheckedChanged += gcnew System::EventHandler( this, &MyForm::chBoxLockDoor_CheckedChanged );
 			// 
 			// comBoxPortNames
 			// 
@@ -163,6 +169,7 @@ namespace BushWinApplication {
 			this->comBoxPortNames->TabIndex = 4;
 			this->comBoxPortNames->DropDown += gcnew System::EventHandler( this, &MyForm::comBoxPortNames_DropDown );
 			this->comBoxPortNames->SelectionChangeCommitted += gcnew System::EventHandler( this, &MyForm::comBoxPortNames_SelectionChangeCommitted );
+			this->comBoxPortNames->DropDownClosed += gcnew System::EventHandler( this, &MyForm::comBoxPortNames_DropDownClosed );
 			// 
 			// trayNotification
 			// 
@@ -305,9 +312,9 @@ namespace BushWinApplication {
 			this->labelNameBushConnect->AutoSize = true;
 			this->labelNameBushConnect->Location = System::Drawing::Point( 7, 24 );
 			this->labelNameBushConnect->Name = L"labelNameBushConnect";
-			this->labelNameBushConnect->Size = System::Drawing::Size( 109, 18 );
+			this->labelNameBushConnect->Size = System::Drawing::Size( 88, 18 );
 			this->labelNameBushConnect->TabIndex = 0;
-			this->labelNameBushConnect->Text = L"Подключение:";
+			this->labelNameBushConnect->Text = L"Состояние:";
 			// 
 			// timerCheckData
 			// 
@@ -376,6 +383,9 @@ namespace BushWinApplication {
 		short fnTrayIconUpdate( Int16 bushStatus );
 		short fnFormAppear();
 		short fnOnTimerUpdate();
+
+		short fnComBoxSelectionChange();
+		short fnComBoxSelectionCheck();
 		
 		Void fnStaticMemberInit() {
 			m_pIcoDisconnect = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushDisconnected.ico" );
@@ -383,11 +393,6 @@ namespace BushWinApplication {
 			m_pIcoClose = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushClosed.ico" );
 			m_pIcoLock = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushLocked.ico" );
 			m_pIcoOverHeat = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushOverHeat.ico" );
-		}
-
-		Void trayIcon_MouseDoubleClick( System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e ) {
-			fnFormAppear();
-			return;
 		}
 
 		Void MyForm_FormClosing( System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e ) {
@@ -414,18 +419,29 @@ namespace BushWinApplication {
 			fnLockUnlockDoor();
 			return;
 		}
+		Void trayIcon_MouseDoubleClick( System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e ) {
+			fnFormAppear();
+			return;
+		}
 		Void timerCheckData_Tick( System::Object^  sender, System::EventArgs^  e ) {
 			fnOnTimerUpdate();
+			return;
+		}
+		Void chBoxLockDoor_CheckedChanged( System::Object^  sender, System::EventArgs^  e ) {
+			fnTrayIconUpdate( m_lastBushStatus );
 			return;
 		}
 		Void comBoxPortNames_DropDown( System::Object^  sender, System::EventArgs^  e ) {
 			fnReNewComPorts();
 			return;
-		}	
+		}
 		Void comBoxPortNames_SelectionChangeCommitted( System::Object^  sender, System::EventArgs^  e ) {
-			fnReconnectToPort( comBoxPortNames->SelectedItem->ToString() );
-			fnStatusLabelUpdate( 0 );
-			fnTrayIconUpdate( 0 );
+			fnComBoxSelectionCheck(); //second check because if change window before close drop down, dropdown event wont be called
+			fnComBoxSelectionChange();
+			return;
+		}
+		Void comBoxPortNames_DropDownClosed( System::Object^  sender, System::EventArgs^  e ) {
+			fnComBoxSelectionCheck();
 			return;
 		}
 };

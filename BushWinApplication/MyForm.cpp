@@ -23,6 +23,7 @@ short BushWinApplication::MyForm::fnOnStart()
 {
 	m_pXmlConfigFilePath = nullptr;
 	m_pSuccessPortConnectedName = L"";
+	m_lastSelectedComBoxIndex = UNSELECTED_INDEX;
 	
 	Icon = m_pIcoDisconnect;
 	ShowIcon = true;
@@ -81,7 +82,7 @@ short BushWinApplication::MyForm::fnGetUserSettings( String^ pPathLocalData )
 		fnReNewComPorts();
 		comBoxPortNames->SelectedIndex = comBoxPortNames->FindStringExact( compareString );
 		if ( comBoxPortNames->SelectedIndex != -1 )
-			fnReconnectToPort( compareString );		
+			fnComBoxSelectionChange();
 	}		
 
 	return 0;
@@ -199,13 +200,13 @@ short BushWinApplication::MyForm::fnStatusLabelUpdate( Int16 bushStatus )
 	switch ( bushStatus )
 	{		
 	case BUSH_STATUS::NO_STATUS:
-		labelBushConnect->Text = L"Выберите порт!";
+		labelBushConnect->Text = L"Выберите другой порт!";
 		break;
 	case BUSH_STATUS::DISCONNECTED:
-		labelBushConnect->Text = L"Не подкючен! Ожидание ответа...";
+		labelBushConnect->Text = L"Порт открыт! Ожидание ответа...";
 		break;
 	case BUSH_STATUS::CONNECTED:
-		labelBushConnect->Text = L"Подключен";
+		labelBushConnect->Text = L"Подключение установлено";
 		break;
 	case BUSH_STATUS::HEAT_SENS_ERR:
 		labelBushConnect->Text = L"Ошибка датчика температуры!";
@@ -298,8 +299,8 @@ short BushWinApplication::MyForm::fnFormAppear()
 
 short BushWinApplication::MyForm::fnOnTimerUpdate()
 {
-	BUSH_STATUS bushStatus;
 	DATABUSH bushState;
+	BUSH_STATUS bushStatus;
 
 	if ( g_ITCdataBush.fnIsDataChanged() )
 	{
@@ -308,13 +309,14 @@ short BushWinApplication::MyForm::fnOnTimerUpdate()
 		m_isDoorClosed = ( bushState.info[INFO_BYTE_BITS::DOOR] != 0 );
 		m_isLockLocked = ( bushState.info[INFO_BYTE_BITS::LOCK] != 0 );
 		m_isRelayOn = ( bushState.info[INFO_BYTE_BITS::RELAY] != 0 );
+		m_lastBushStatus = bushStatus;
 
 		fnInfoLabelsReset();
-		fnStatusLabelUpdate( bushStatus );
-		fnTrayMenuUpdate( bushStatus, m_isLockLocked );
-		fnTrayIconUpdate( bushStatus );
+		fnStatusLabelUpdate( m_lastBushStatus );
+		fnTrayMenuUpdate( m_lastBushStatus, m_isLockLocked );
+		fnTrayIconUpdate( m_lastBushStatus );
 
-		if ( bushStatus != NO_STATUS && bushStatus != DISCONNECTED )
+		if ( m_lastBushStatus != NO_STATUS && m_lastBushStatus != DISCONNECTED )
 		{
 			labelBushDoor->Text = m_isDoorClosed ? L"Закрыта" : L"Открыта";
 			labelBushLock->Text = m_isLockLocked ? L"Закрыт" : L"Открыт";
@@ -325,6 +327,29 @@ short BushWinApplication::MyForm::fnOnTimerUpdate()
 		}		
 	}
 
+	return 0;
+}
+
+// Check change index for not reconnecting to same port
+short BushWinApplication::MyForm::fnComBoxSelectionChange()
+{
+	if ( comBoxPortNames->SelectedIndex != m_lastSelectedComBoxIndex )
+	{
+		m_lastSelectedComBoxIndex = comBoxPortNames->SelectedIndex;
+		fnStatusLabelUpdate( 0 );
+		fnTrayIconUpdate( 0 );
+		fnReconnectToPort( comBoxPortNames->SelectedItem->ToString() );
+	}
+	
+	return 0;
+}
+
+short BushWinApplication::MyForm::fnComBoxSelectionCheck()
+{
+	// if comboBox wasn't closed before window change it will return not selected value
+	if ( comBoxPortNames->SelectedIndex == UNSELECTED_INDEX )
+				comBoxPortNames->SelectedIndex = m_lastSelectedComBoxIndex;
+		
 	return 0;
 }
 

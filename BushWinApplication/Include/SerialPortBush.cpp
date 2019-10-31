@@ -277,6 +277,8 @@ INT8 SerialPortBush::fnAverageTempCalc( const BYTE infoByte )
 	
 	if ( m_bushStatus == BUSH_STATUS::OVERHEATED && trueTemperature < MIN_OVERHEAT_TEMP )
 		m_bushStatus = BUSH_STATUS::CONNECTED;
+	else if ( trueTemperature > MIN_OVERHEAT_TEMP && m_bushStatus != BUSH_STATUS::OVERHEATED )
+		m_bushStatus = BUSH_STATUS::OVERHEATED;
 
 	return trueTemperature;
 }

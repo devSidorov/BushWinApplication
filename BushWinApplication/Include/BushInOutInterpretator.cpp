@@ -36,8 +36,8 @@ DWORD BushInOutInterpretator::fnDefaultWait()
 
 DWORD BushInOutInterpretator::fnConnectCheck()
 {
-	fnWrite( OPCODE::CONNECT_CHECK, INFO_BYTE::NO_INFO );
 	m_pDataITC->fnSetData( BUSH_STATUS::DISCONNECTED );
+	fnWrite( OPCODE::CONNECT_CHECK, INFO_BYTE::NO_INFO );
 	m_script = BUSH_SCRIPT::INIT;
 	m_waitForOpcode = OPCODE::CONNECT_FINE;
 	m_dwWaitTime = M_WAIT_TIME_DEFAULT;
