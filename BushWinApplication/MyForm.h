@@ -19,9 +19,9 @@ namespace BushWinApplication {
 	public:
 		MyForm( void )
 		{
-			InitializeComponent();			
+			InitializeComponent();
 			fnStaticMemberInit();
-			fnOnStart();						
+			fnOnStart();
 		}
 
 	protected:
@@ -35,7 +35,7 @@ namespace BushWinApplication {
 				delete components;
 			}
 		}
-	private: 
+	private:
 		System::Windows::Forms::Label^  labelPort;
 		System::Windows::Forms::CheckBox^  chBoxLockDoor;
 		System::Windows::Forms::CheckBox^  chBoxOverheat;
@@ -80,7 +80,7 @@ namespace BushWinApplication {
 		Xml::XmlDocument^ m_pConfigXmlFile;
 		String^ m_pXmlConfigFilePath;
 		String^ m_pSuccessPortConnectedName;
-	
+
 	private:
 		/// <summary>
 		/// Required designer variable
@@ -365,15 +365,15 @@ namespace BushWinApplication {
 		}
 #pragma endregion
 	private:
-		short fnOnStart();		
-		
+		short fnOnStart();
+
 		short fnGetUserSettings( String^ pPathLocalData );
 		short fnSetUserSettings();
-		
+
 		short fnReconnectToPort( String^ pPortName );
 		short fnStartBushIOThread( String^ pPortName );
 		short fnCloseOldBushIOThread();
-		
+
 		short fnInfoLabelsReset();
 		short fnLockUnlockDoor();
 		short fnReNewComPorts();
@@ -386,7 +386,7 @@ namespace BushWinApplication {
 
 		short fnComBoxSelectionChange();
 		short fnComBoxSelectionCheck();
-		
+
 		Void fnStaticMemberInit() {
 			m_pIcoDisconnect = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushDisconnected.ico" );
 			m_pIcoOpen = Form::Icon->ExtractAssociatedIcon( ".//Resource//BushOpened.ico" );
@@ -396,11 +396,13 @@ namespace BushWinApplication {
 		}
 
 		Void MyForm_FormClosing( System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e ) {
-			if ( e->CloseReason == CloseReason::UserClosing ) 			{
+			if ( e->CloseReason == CloseReason::UserClosing )
+			{
 				e->Cancel = true;
 				WindowState = FormWindowState::Minimized;
 			}
-			else {
+			else
+			{
 				fnSetUserSettings();
 				Diagnostics::Trace::TraceInformation( String::Format( "+++++++++| Application finished: {0} |++++++++++", DateTime::Now ) );
 			}
@@ -444,5 +446,5 @@ namespace BushWinApplication {
 			fnComBoxSelectionCheck();
 			return;
 		}
-};
+	};
 }

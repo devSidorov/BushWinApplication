@@ -2,18 +2,18 @@
 
 DWORD SerialPortBush::fnConnectPort()
 {	
-	m_hComPort = nullptr;	
+	m_hComPort = INVALID_HANDLE_VALUE;	
 	if ( *m_acPortName )
 	{
 		m_hComPort = CreateFile( m_acPortName,
-						   GENERIC_READ | GENERIC_WRITE,
-						   NULL,      //  must be opened with exclusive-access
-						   NULL,   //  default security attributes
-						   OPEN_EXISTING, // serial port default
-						   NULL,
-						   NULL ); // OPEN_EXISTING default 		
+								 GENERIC_READ | GENERIC_WRITE,
+								 NULL,      //  must be opened with exclusive-access
+								 NULL,   //  default security attributes
+								 OPEN_EXISTING, // serial port default
+								 NULL,
+								 NULL ); // OPEN_EXISTING default 		
 	}
-	if ( !m_hComPort )
+	if ( !m_hComPort || m_hComPort == INVALID_HANDLE_VALUE )
 	{
 		System::Diagnostics::Trace::TraceError( System::String::Format( "fnConnectPort: Open port fail! {0:X}", GetLastError() ) );
 		return ERROR_PORT_UNREACHABLE;

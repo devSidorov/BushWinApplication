@@ -123,20 +123,8 @@ protected:
 	HANDLE m_hReadThreadHandle;
 
 public:
-	SerialPortBush() {
-		m_hReadThreadHandle = nullptr;
-		m_hMutexReadData = CreateMutex( nullptr, FALSE, nullptr );
-		m_hDataFromBush = CreateEvent( nullptr, TRUE, FALSE, nullptr );
-		m_hReadThreadStop = CreateEvent( nullptr, TRUE, FALSE, nullptr );
-		SecureZeroMemory( m_aDataReadITC, sizeof( DATA_FROM_BUSH ) * MAX_STACK );
-		m_dCurrent = m_dLastRead = -1;
-		
-		m_bushStatus = BUSH_STATUS::NO_STATUS;
-		SecureZeroMemory( &m_acPortName, sizeof( TCHAR ) * MAX_PATH );
-		SecureZeroMemory( &m_bushState, sizeof( DATABUSH ) );
-		m_hComPort = INVALID_HANDLE_VALUE;
-	}
-	SerialPortBush( const TCHAR* pcPortName ) : SerialPortBush() {
+	SerialPortBush( const TCHAR* pcPortName ) {
+		fnClearClassMembers();
 		fnSetPortName( pcPortName );
 	}
 	~SerialPortBush() { 
@@ -144,6 +132,22 @@ public:
 	}
 
 private:
+	void fnClearClassMembers() {
+		m_hReadThreadHandle = nullptr;
+		m_hMutexReadData = CreateMutex( nullptr, FALSE, nullptr );
+		m_hDataFromBush = CreateEvent( nullptr, TRUE, FALSE, nullptr );
+		m_hReadThreadStop = CreateEvent( nullptr, TRUE, FALSE, nullptr );
+		SecureZeroMemory( m_aDataReadITC, sizeof( DATA_FROM_BUSH ) * MAX_STACK );
+		m_dCurrent = m_dLastRead = -1;
+
+		m_bushStatus = BUSH_STATUS::NO_STATUS;
+		SecureZeroMemory( &m_acPortName, sizeof( TCHAR ) * MAX_PATH );
+		SecureZeroMemory( &m_bushState, sizeof( DATABUSH ) );
+		m_hComPort = INVALID_HANDLE_VALUE;
+		
+		return;
+	}
+	
 	VOID fnReleaseHandles() {
 		CloseHandle( m_hReadThreadHandle );
 		CloseHandle( m_hMutexReadData );
@@ -154,7 +158,11 @@ private:
 	
 	DWORD fnSetPortName( const TCHAR* pcPortName ) {
 		if ( *pcPortName )
-			_tcscpy_s<MAX_PATH>( m_acPortName, pcPortName );
+		{
+			_tcscpy_s<MAX_PATH>( m_acPortName, "\\\\.\\" );
+			_tcscat_s<MAX_PATH>( m_acPortName, pcPortName );
+		}
+			
 
 		return ERROR_SUCCESS;
 	}
