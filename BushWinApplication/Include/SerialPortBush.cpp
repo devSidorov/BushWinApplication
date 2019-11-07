@@ -73,28 +73,26 @@ DWORD SerialPortBush::fnStopReadThread()
 DWORD SerialPortBush::fnReadPort( BYTE& opcodeByte, BYTE& infoByte )
 {
 	BYTE bufferRead[COUNT_BYTE] = { 0,0,0,0 };
-	OVERLAPPED asyncStruct;
 	
-	SecureZeroMemory( &asyncStruct, sizeof( OVERLAPPED ) );
-	asyncStruct.hEvent = CreateEvent( nullptr, TRUE, FALSE, nullptr );
 	opcodeByte = infoByte = 0;
 
 	for ( INT8 inc = 0; inc <= CACHE_BYTE; inc++ )
 	{
+		ResetEvent( m_asyncReadStruct.hEvent );
 		DWORD fSuccess = ReadFile( m_hComPort,
 								   bufferRead + inc,
 								   1,
 								   NULL,
-								   &asyncStruct );
+								   &m_asyncReadStruct );
 		//check async return
 		if ( !fSuccess )
 			if ( GetLastError() == ERROR_IO_PENDING )
 			{
-				fSuccess = WaitForSingleObject( asyncStruct.hEvent, M_WAIT_TIME_DEFAULT / 2 );
+				fSuccess = WaitForSingleObject( m_asyncReadStruct.hEvent, M_WAIT_TIME_DEFAULT / 2 );
 				if ( fSuccess != WAIT_OBJECT_0 && fSuccess != WAIT_ABANDONED )
-				{
+				{					
+					System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnReadPort: Waiting for read async timeout or error return: {0:X}, error: {1:X}", fSuccess, GetLastError() ) );
 					CancelIo( m_hComPort ); //cancel all IO operation in this thread - in this only read
-					System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnReadPort: Waiting for read async timeout or error return: {0:X}", fSuccess ) );
 					return ERROR_TIMEOUT;
 				}
 			}
@@ -146,28 +144,26 @@ DWORD SerialPortBush::fnReadPort( BYTE& opcodeByte, BYTE& infoByte )
 DWORD SerialPortBush::fnWritePort( BYTE opcodeByte, BYTE infoByte )
 {
 	BYTE bufferWrite[COUNT_BYTE] = { FIRST_BYTE_VALUE, opcodeByte, infoByte, 0 };
-	OVERLAPPED asyncStruct;
-
-	SecureZeroMemory( &asyncStruct, sizeof( OVERLAPPED ) );
-	asyncStruct.hEvent = CreateEvent( nullptr, TRUE, FALSE, nullptr );
-	
+		
 	bufferWrite[CACHE_BYTE] = fnDallasMaximCRC8( bufferWrite + 1, INFO_BYTES );
 
+	ResetEvent( m_asyncWriteStruct.hEvent );
 	DWORD fSuccess = WriteFile( m_hComPort,
 								bufferWrite,
 								COUNT_BYTE,
 								NULL,
-								&asyncStruct );
+								&m_asyncWriteStruct );
 	
 	//check async return
 	if ( !fSuccess )
 		if ( GetLastError() == ERROR_IO_PENDING )
 		{
-			fSuccess = WaitForSingleObject( asyncStruct.hEvent, M_WAIT_TIME_DEFAULT / 2 );
+			fSuccess = WaitForSingleObject( m_asyncWriteStruct.hEvent, M_WAIT_TIME_DEFAULT / 2 );
 			if ( fSuccess != WAIT_OBJECT_0 && fSuccess != WAIT_ABANDONED )
 			{
+				DWORD dReturn = GetLastError();
+				System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnWritePort: Waiting for write async timeout or error return: {0:X} error: {1:X}", fSuccess, GetLastError() ) );
 				CancelIo( m_hComPort ); //cancel all IO operation in this thread - in this only write
-				System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnWritePort: Waiting for write async timeout or error return: {0:X}", fSuccess ) );
 				return ERROR_TIMEOUT;
 			}
 		}
@@ -176,7 +172,7 @@ DWORD SerialPortBush::fnWritePort( BYTE opcodeByte, BYTE infoByte )
 			System::Diagnostics::Trace::TraceError( System::String::Format( "fnWritePort: Error return from async read thread: {0:X}", GetLastError() ) );
 			return ERROR_IO_INCOMPLETE;
 		}
-
+		
 	return ERROR_SUCCESS;
 }
 

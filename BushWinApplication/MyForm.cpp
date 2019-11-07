@@ -66,7 +66,7 @@ short BushWinApplication::MyForm::fnGetUserSettings( String^ pPathLocalData )
 	m_pXmlConfigFilePath = pPathLocalData + pXmlConfigFileName;
 
 	//if file exist take settings from it, if not from default file
-	Xml::XmlTextReader^ configFileRead = gcnew Xml::XmlTextReader( ( IO::File::Exists( pPathLocalData + pXmlConfigFileName ) ) ? m_pXmlConfigFilePath : pXmlConfigFileName );
+	Xml::XmlTextReader^ configFileRead = gcnew Xml::XmlTextReader( ( IO::File::Exists( m_pXmlConfigFilePath ) ) ? m_pXmlConfigFilePath : pXmlConfigFileName );
 	m_pConfigXmlFile->Load( configFileRead );
 	configFileRead->Close();	
 
@@ -185,10 +185,10 @@ short BushWinApplication::MyForm::fnReNewComPorts()
 {
 	array<String^>^ serialPorts = nullptr;
 
-	comBoxPortNames->Items->Clear();
 	serialPorts = IO::Ports::SerialPort::GetPortNames();
 	if ( serialPorts )
 	{
+		comBoxPortNames->Items->Clear();
 		Array::Sort( serialPorts );
 		comBoxPortNames->Items->AddRange( serialPorts );
 	}

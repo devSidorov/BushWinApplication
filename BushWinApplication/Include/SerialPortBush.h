@@ -115,6 +115,9 @@ private:
 	INT8 m_dCurrent;
 	INT8 m_dLastRead;
 
+	OVERLAPPED m_asyncReadStruct;
+	OVERLAPPED m_asyncWriteStruct;
+
 protected:	
 	BUSH_STATUS m_bushStatus;
 	DATABUSH m_bushState;
@@ -140,6 +143,11 @@ private:
 		SecureZeroMemory( m_aDataReadITC, sizeof( DATA_FROM_BUSH ) * MAX_STACK );
 		m_dCurrent = m_dLastRead = -1;
 
+		SecureZeroMemory( &m_asyncReadStruct, sizeof( OVERLAPPED ) );
+		SecureZeroMemory( &m_asyncWriteStruct, sizeof( OVERLAPPED ) );
+		m_asyncReadStruct.hEvent = CreateEvent( nullptr, TRUE, FALSE, nullptr );
+		m_asyncWriteStruct.hEvent = CreateEvent( nullptr, TRUE, FALSE, nullptr );
+
 		m_bushStatus = BUSH_STATUS::NO_STATUS;
 		SecureZeroMemory( &m_acPortName, sizeof( TCHAR ) * MAX_PATH );
 		SecureZeroMemory( &m_bushState, sizeof( DATABUSH ) );
@@ -154,6 +162,8 @@ private:
 		CloseHandle( m_hDataFromBush );
 		CloseHandle( m_hReadThreadStop );
 		CloseHandle( m_hComPort );
+		CloseHandle( m_asyncReadStruct.hEvent );
+		CloseHandle( m_asyncWriteStruct.hEvent );
 	}
 	
 	DWORD fnSetPortName( const TCHAR* pcPortName ) {
