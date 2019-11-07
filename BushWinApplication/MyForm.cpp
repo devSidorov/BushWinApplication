@@ -52,7 +52,7 @@ short BushWinApplication::MyForm::fnOnStart()
 	
 	Diagnostics::Trace::Listeners->Add( gcnew System::Diagnostics::TextWriterTraceListener( m_pLogFile ) );
 	Diagnostics::Trace::AutoFlush = true;
-	Diagnostics::Trace::TraceInformation( String::Format ( "+++++++++| Application started: {0} |+++++++++", DateTime::Now ) ); 
+	Diagnostics::Trace::TraceInformation( String::Format ( "==========| Application started:  {0} |==========", DateTime::Now ) ); 
 	
 	fnGetUserSettings( pPathLocalData );
 	
@@ -192,6 +192,8 @@ short BushWinApplication::MyForm::fnReNewComPorts()
 		Array::Sort( serialPorts );
 		comBoxPortNames->Items->AddRange( serialPorts );
 	}
+	else
+		return ERROR_EMPTY;
 	return 0;
 }
 
@@ -291,9 +293,9 @@ short BushWinApplication::MyForm::fnTrayIconUpdate( Int16 bushStatus )
 
 short BushWinApplication::MyForm::fnFormAppear()
 {
+	Visible = true;
 	WindowState = FormWindowState::Normal;
-	TopMost = true;
-	TopMost = false;
+	Activate();
 	return 0;
 }
 
@@ -347,7 +349,7 @@ short BushWinApplication::MyForm::fnComBoxSelectionChange()
 short BushWinApplication::MyForm::fnComBoxSelectionCheck()
 {
 	// if comboBox wasn't closed before window change it will return not selected value
-	if ( comBoxPortNames->SelectedIndex == UNSELECTED_INDEX )
+	if ( !comBoxPortNames->SelectedItem || comBoxPortNames->SelectedIndex == UNSELECTED_INDEX )
 				comBoxPortNames->SelectedIndex = m_lastSelectedComBoxIndex;
 		
 	return 0;

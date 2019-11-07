@@ -10,11 +10,13 @@ DWORD SerialPortBush::fnConnectPort()
 								 NULL,      //  must be opened with exclusive-access
 								 NULL,   //  default security attributes
 								 OPEN_EXISTING, // serial port default
-								 NULL,
+								 FILE_FLAG_OVERLAPPED,
 								 NULL ); // OPEN_EXISTING default 		
 	}
 	if ( !m_hComPort || m_hComPort == INVALID_HANDLE_VALUE )
 	{
+		char portName[] = "Com11";
+		
 		System::Diagnostics::Trace::TraceError( System::String::Format( "fnConnectPort: Open port fail! {0:X}", GetLastError() ) );
 		return ERROR_PORT_UNREACHABLE;
 	}
@@ -71,8 +73,10 @@ DWORD SerialPortBush::fnStopReadThread()
 DWORD SerialPortBush::fnReadPort( BYTE& opcodeByte, BYTE& infoByte )
 {
 	BYTE bufferRead[COUNT_BYTE] = { 0,0,0,0 };
-	DWORD bytesIOoperated;
+	OVERLAPPED asyncStruct;
 	
+	SecureZeroMemory( &asyncStruct, sizeof( OVERLAPPED ) );
+	asyncStruct.hEvent = CreateEvent( nullptr, TRUE, FALSE, nullptr );
 	opcodeByte = infoByte = 0;
 
 	for ( INT8 inc = 0; inc <= CACHE_BYTE; inc++ )
@@ -80,50 +84,61 @@ DWORD SerialPortBush::fnReadPort( BYTE& opcodeByte, BYTE& infoByte )
 		DWORD fSuccess = ReadFile( m_hComPort,
 								   bufferRead + inc,
 								   1,
-								   &bytesIOoperated,
-								   NULL );
-		//check input bytes
-		if ( fSuccess )
-		{
-			switch ( inc )
+								   NULL,
+								   &asyncStruct );
+		//check async return
+		if ( !fSuccess )
+			if ( GetLastError() == ERROR_IO_PENDING )
 			{
-			case FIRST_BYTE:
-				if ( bufferRead[inc] != FIRST_BYTE_VALUE )
+				fSuccess = WaitForSingleObject( asyncStruct.hEvent, M_WAIT_TIME_DEFAULT / 2 );
+				if ( fSuccess != WAIT_OBJECT_0 && fSuccess != WAIT_ABANDONED )
 				{
-					return ERROR_DATA_NOT_ACCEPTED;
-				}					
-				break;
-			case OPCODE_BYTE:
-				if ( !bufferRead[inc] )
-				{
-					System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnReadPort: Readen zero OPCODE byte from BUSH!{0,3:X}{1,3:X}{2,3:X}{3,3:X}", bufferRead[FIRST_BYTE], bufferRead[OPCODE_BYTE], bufferRead[INFO_BYTE], bufferRead[CACHE_BYTE] ) );
-					return ERROR_DATA_NOT_ACCEPTED;
-				}					
-				break;
-			case INFO_BYTE:
-				break;
-			case CACHE_BYTE:
-				if ( bufferRead[CACHE_BYTE] != fnDallasMaximCRC8( bufferRead + 1, INFO_BYTES ) )
-				{
-					System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnReadPort: Readen wrong CACHE byte from BUSH!{0,3:X}{1,3:X}{2,3:X}{3,3:X}", bufferRead[FIRST_BYTE], bufferRead[OPCODE_BYTE], bufferRead[INFO_BYTE], bufferRead[CACHE_BYTE] ) );
-					return ERROR_DATA_NOT_ACCEPTED;
+					CancelIo( m_hComPort ); //cancel all IO operation in this thread - in this only read
+					System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnReadPort: Waiting for read async timeout or error return: {0:X}", fSuccess ) );
+					return ERROR_TIMEOUT;
 				}
-				else
-				{
-					opcodeByte = bufferRead[OPCODE_BYTE];
-					infoByte = bufferRead[INFO_BYTE];
-				}
-				break;
-			default:
-				System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnReadPort: Unpredicted behavior, too many bytes from bush! {0:X}", inc ) );
-				return ERROR_UNIDENTIFIED_ERROR;
 			}
-		}
-		else
+			else
+			{
+				System::Diagnostics::Trace::TraceError( System::String::Format( "fnReadPort: Error return from async read thread: {0:X}", GetLastError() ) );
+				return ERROR_IO_INCOMPLETE;
+			}
+
+
+		//check input bytes
+		switch ( inc )
 		{
-			System::Diagnostics::Trace::TraceError( "fnReadPort: Read from port failed" ); 
-			return ERROR_PORT_UNREACHABLE;
-		}
+		case FIRST_BYTE:
+			if ( bufferRead[inc] != FIRST_BYTE_VALUE )
+			{
+				return ERROR_DATA_NOT_ACCEPTED;
+			}					
+			break;
+		case OPCODE_BYTE:
+			if ( !bufferRead[inc] )
+			{
+				System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnReadPort: Readen zero OPCODE byte from BUSH!{0,3:X}{1,3:X}{2,3:X}{3,3:X}", bufferRead[FIRST_BYTE], bufferRead[OPCODE_BYTE], bufferRead[INFO_BYTE], bufferRead[CACHE_BYTE] ) );
+				return ERROR_DATA_NOT_ACCEPTED;
+			}					
+			break;
+		case INFO_BYTE:
+			break;
+		case CACHE_BYTE:
+			if ( bufferRead[CACHE_BYTE] != fnDallasMaximCRC8( bufferRead + 1, INFO_BYTES ) )
+			{
+				System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnReadPort: Readen wrong CACHE byte from BUSH!{0,3:X}{1,3:X}{2,3:X}{3,3:X}", bufferRead[FIRST_BYTE], bufferRead[OPCODE_BYTE], bufferRead[INFO_BYTE], bufferRead[CACHE_BYTE] ) );
+				return ERROR_DATA_NOT_ACCEPTED;
+			}
+			else
+			{
+				opcodeByte = bufferRead[OPCODE_BYTE];
+				infoByte = bufferRead[INFO_BYTE];
+			}
+			break;
+		default:
+			System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnReadPort: Unpredicted behavior, too many bytes from bush! {0:X}", inc ) );
+			return ERROR_UNIDENTIFIED_ERROR;
+		}		
 	}		
 	return ERROR_SUCCESS;
 }
@@ -131,21 +146,37 @@ DWORD SerialPortBush::fnReadPort( BYTE& opcodeByte, BYTE& infoByte )
 DWORD SerialPortBush::fnWritePort( BYTE opcodeByte, BYTE infoByte )
 {
 	BYTE bufferWrite[COUNT_BYTE] = { FIRST_BYTE_VALUE, opcodeByte, infoByte, 0 };
-	DWORD bytesIOoperated;
+	OVERLAPPED asyncStruct;
+
+	SecureZeroMemory( &asyncStruct, sizeof( OVERLAPPED ) );
+	asyncStruct.hEvent = CreateEvent( nullptr, TRUE, FALSE, nullptr );
 	
 	bufferWrite[CACHE_BYTE] = fnDallasMaximCRC8( bufferWrite + 1, INFO_BYTES );
 
 	DWORD fSuccess = WriteFile( m_hComPort,
 								bufferWrite,
 								COUNT_BYTE,
-								&bytesIOoperated,
-								NULL );
+								NULL,
+								&asyncStruct );
 	
+	//check async return
 	if ( !fSuccess )
-	{
-		System::Diagnostics::Trace::TraceError( "fnWritePort: Write to port failed" ); 
-		return ERROR_PORT_UNREACHABLE;
-	}
+		if ( GetLastError() == ERROR_IO_PENDING )
+		{
+			fSuccess = WaitForSingleObject( asyncStruct.hEvent, M_WAIT_TIME_DEFAULT / 2 );
+			if ( fSuccess != WAIT_OBJECT_0 && fSuccess != WAIT_ABANDONED )
+			{
+				CancelIo( m_hComPort ); //cancel all IO operation in this thread - in this only write
+				System::Diagnostics::Trace::TraceWarning( System::String::Format( "fnWritePort: Waiting for write async timeout or error return: {0:X}", fSuccess ) );
+				return ERROR_TIMEOUT;
+			}
+		}
+		else
+		{
+			System::Diagnostics::Trace::TraceError( System::String::Format( "fnWritePort: Error return from async read thread: {0:X}", GetLastError() ) );
+			return ERROR_IO_INCOMPLETE;
+		}
+
 	return ERROR_SUCCESS;
 }
 

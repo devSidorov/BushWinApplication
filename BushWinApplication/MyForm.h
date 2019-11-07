@@ -400,11 +400,12 @@ namespace BushWinApplication {
 			{
 				e->Cancel = true;
 				WindowState = FormWindowState::Minimized;
+				Visible = false;
 			}
 			else
 			{
 				fnSetUserSettings();
-				Diagnostics::Trace::TraceInformation( String::Format( "+++++++++| Application finished: {0} |++++++++++", DateTime::Now ) );
+				Diagnostics::Trace::TraceInformation( String::Format( "__________| Application finished: {0} |__________", DateTime::Now ) );
 			}
 			return;
 		}
