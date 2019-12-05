@@ -33,6 +33,9 @@
     <ClCompile Include="Include\BushInOutInterpretator.cpp">
       <Filter>Source Files\Include</Filter>
     </ClCompile>
+    <ClCompile Include="Include\QueryTemplate.cpp">
+      <Filter>Source Files\Include</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyForm.h">
@@ -45,6 +48,9 @@
       <Filter>Header Files\Include</Filter>
     </ClInclude>
     <ClInclude Include="Include\BushInOutInterpretator.h">
+      <Filter>Header Files\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\QueryTemplate.h">
       <Filter>Header Files\Include</Filter>
     </ClInclude>
   </ItemGroup>
