@@ -34,13 +34,13 @@ template <class T>
 class LimitedQueue : private QueueLinkedList< T >
 {
 private:
-	unsigned int m_LimitPos;
-	unsigned int m_QueueSize;
+	unsigned int m_limitPos;
+	unsigned int m_queueSize;
 
 public:
-	LimitedQueue( unsigned int limit = NULL ) : m_limitPos( limit ), m_QueueSize( NULL ) {};
+	LimitedQueue( unsigned int limit = NULL ) : m_limitSize( limit ), m_queueSize( NULL ) {};
 	LimitedQueue( T& data, unsigned int limit = NULL ) : QueueLinkedList( data ), 
-		m_limitPos( limit ), m_QueueSize( 1 ) {};
+		m_limitSize( limit ), m_queueSize( 1 ) {};
 
 	virtual bool fnIsEmpty();
 	virtual void fnPush( T& data );
